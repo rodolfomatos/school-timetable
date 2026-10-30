@@ -33,6 +33,7 @@ from timetable.models import (
 )
 from timetable.objective import avaliar
 from timetable.ui import importar_json, exportar_json, gerar_grade
+from timetable.export import exportar
 
 
 def _carregar_dataset(caminho: str) -> tuple[ContextoRestricoes, list[Slot]]:
@@ -302,6 +303,28 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_exportar(args: argparse.Namespace) -> int:
+    """Exporta um horário para CSV ou iCal."""
+
+    horario = importar_json(args.input)
+
+    formato = args.formato.lower()
+    if formato not in ("csv", "ical", "ics"):
+        print(f"ERRO: formato desconhecido '{args.formato}'. Use csv ou ical.")
+        return 1
+
+    exportar(
+        horario,
+        args.output,
+        formato=formato,
+        semana_inicial=args.semana_inicial,
+        nome_escola=args.nome_escola,
+    )
+
+    print(f"Horário exportado para: {args.output} (formato: {formato})")
+    return 0
+
+
 def main() -> None:
     """Ponto de entrada da CLI."""
 
@@ -336,6 +359,23 @@ def main() -> None:
         "--tempo", type=float, default=30.0, help="Tempo limite por solver em segundos (padrão: 30)"
     )
     p_bench.set_defaults(func=cmd_benchmark)
+
+    # exportar
+    p_exp = subparsers.add_parser(
+        "exportar", help="Exporta um horário para CSV ou iCal"
+    )
+    p_exp.add_argument("--input", required=True, help="Caminho para o horário JSON de entrada")
+    p_exp.add_argument("--output", required=True, help="Caminho do ficheiro de saída")
+    p_exp.add_argument(
+        "--formato", default="csv", help="Formato de saída: csv ou ical (padrão: csv)"
+    )
+    p_exp.add_argument(
+        "--semana-inicial", default="2026-09-07", help="Data da primeira segunda-feira (padrão: 2026-09-07)"
+    )
+    p_exp.add_argument(
+        "--nome-escola", default="Escola", help="Nome da escola (usado no iCal)"
+    )
+    p_exp.set_defaults(func=cmd_exportar)
 
     args = parser.parse_args()
 
