@@ -27,6 +27,37 @@ make lint       # executa linter
 make tree       # lista ficheiros do projeto
 ```
 
+## Interface de Linha de Comando (CLI)
+
+A CLI permite gerar, validar e fazer benchmark de horários sem escrever código Python:
+
+```bash
+# Gerar um horário (Simulated Annealing, padrão)
+python scripts/cli.py generate --input data/sample_school.json --output horario.json --solver sa --tempo 60
+
+# Gerar com Tabu Search
+python scripts/cli.py generate --input data/real_school.json --output horario.json --solver ts --tempo 60
+
+# Gerar com CP-SAT (requer ortools)
+python scripts/cli.py generate --input data/sample_school.json --output horario.json --solver cpsat --tempo 60
+
+# Validar um horário contra restrições duras
+python scripts/cli.py validate --input horario.json
+
+# Executar benchmark comparativo
+python scripts/cli.py benchmark --input data/real_school.json --tempo 30
+```
+
+## Estrutura
+```
+aes/              # Artefatos do sistema AES (plan, build, verify, review, learn, tickets, metrics, shadow)
+src/timetable/    # Código fonte Python
+scripts/          # Scripts utilitários (cli.py, benchmark_real.py)
+tests/            # Testes unitários e de integração
+data/             # Dados de exemplo e fixtures
+docs/             # Documentação técnica
+```
+
 ## Documentação
 - `docs/literature_review.md` — papers e referências
 - `docs/architecture.md` — arquitetura de software
