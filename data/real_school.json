@@ -1,0 +1,92 @@
+{
+  "escola": "Exemplo Real - Escola Secundária",
+  "ano_letivo": "2026/2027",
+  "descricao": "Dataset realista para validação de desempenho: escola média com 10 turmas, 15 professores, 12 disciplinas, 8 salas",
+  "slots": [
+    {"dia": "segunda", "hora": 1},
+    {"dia": "segunda", "hora": 2},
+    {"dia": "segunda", "hora": 3},
+    {"dia": "segunda", "hora": 4},
+    {"dia": "segunda", "hora": 5},
+    {"dia": "terca", "hora": 1},
+    {"dia": "terca", "hora": 2},
+    {"dia": "terca", "hora": 3},
+    {"dia": "terca", "hora": 4},
+    {"dia": "terca", "hora": 5},
+    {"dia": "quarta", "hora": 1},
+    {"dia": "quarta", "hora": 2},
+    {"dia": "quarta", "hora": 3},
+    {"dia": "quarta", "hora": 4},
+    {"dia": "quarta", "hora": 5},
+    {"dia": "quinta", "hora": 1},
+    {"dia": "quinta", "hora": 2},
+    {"dia": "quinta", "hora": 3},
+    {"dia": "quinta", "hora": 4},
+    {"dia": "quinta", "hora": 5},
+    {"dia": "sexta", "hora": 1},
+    {"dia": "sexta", "hora": 2},
+    {"dia": "sexta", "hora": 3},
+    {"dia": "sexta", "hora": 4},
+    {"dia": "sexta", "hora": 5}
+  ],
+  "professores": [
+    {"identificador": "p01", "nome": "Prof. Matemática A", "dia_folga_preferido": "sexta", "prefere_manha": true, "carga_maxima_semanal": 20, "carga_minima_semanal": 10, "disponibilidade": []},
+    {"identificador": "p02", "nome": "Prof. Matemática B", "dia_folga_preferido": "quarta", "prefere_manha": true, "carga_maxima_semanal": 20, "carga_minima_semanal": 10, "disponibilidade": []},
+    {"identificador": "p03", "nome": "Prof. Português A", "dia_folga_preferido": "segunda", "prefere_manha": false, "carga_maxima_semanal": 18, "carga_minima_semanal": 8, "disponibilidade": []},
+    {"identificador": "p04", "nome": "Prof. Português B", "dia_folga_preferido": "terca", "prefere_manha": true, "carga_maxima_semanal": 18, "carga_minima_semanal": 8, "disponibilidade": []},
+    {"identificador": "p05", "nome": "Prof. Inglês", "dia_folga_preferido": "quinta", "prefere_manha": true, "carga_maxima_semanal": 12, "carga_minima_semanal": 6, "disponibilidade": []},
+    {"identificador": "p06", "nome": "Prof. Ciências", "dia_folga_preferido": "sexta", "prefere_manha": true, "carga_maxima_semanal": 16, "carga_minima_semanal": 8, "disponibilidade": []},
+    {"identificador": "p07", "nome": "Prof. História", "dia_folga_preferido": "terca", "prefere_manha": false, "carga_maxima_semanal": 14, "carga_minima_semanal": 6, "disponibilidade": []},
+    {"identificador": "p08", "nome": "Prof. Geografia", "dia_folga_preferido": "quarta", "prefere_manha": true, "carga_maxima_semanal": 12, "carga_minima_semanal": 6, "disponibilidade": []},
+    {"identificador": "p09", "nome": "Prof. Física", "dia_folga_preferido": "quinta", "prefere_manha": true, "carga_maxima_semanal": 10, "carga_minima_semanal": 4, "disponibilidade": []},
+    {"identificador": "p10", "nome": "Prof. Química", "dia_folga_preferido": "segunda", "prefere_manha": false, "carga_maxima_semanal": 10, "carga_minima_semanal": 4, "disponibilidade": []},
+    {"identificador": "p11", "nome": "Prof. Biologia", "dia_folga_preferido": "quarta", "prefere_manha": true, "carga_maxima_semanal": 10, "carga_minima_semanal": 4, "disponibilidade": []},
+    {"identificador": "p12", "nome": "Prof. Educação Física", "dia_folga_preferido": "sexta", "prefere_manha": false, "carga_maxima_semanal": 14, "carga_minima_semanal": 6, "disponibilidade": []},
+    {"identificador": "p13", "nome": "Prof. Artes", "dia_folga_preferido": "terca", "prefere_manha": true, "carga_maxima_semanal": 8, "carga_minima_semanal": 4, "disponibilidade": []},
+    {"identificador": "p14", "nome": "Prof. Informática", "dia_folga_preferido": "quinta", "prefere_manha": true, "carga_maxima_semanal": 8, "carga_minima_semanal": 4, "disponibilidade": []},
+    {"identificador": "p15", "nome": "Prof. Filosofia", "dia_folga_preferido": "quarta", "prefere_manha": false, "carga_maxima_semanal": 6, "carga_minima_semanal": 2, "disponibilidade": []}
+  ],
+  "turmas": [
+    {"identificador": "t01", "ano": 7, "numero_alunos": 25},
+    {"identificador": "t02", "ano": 7, "numero_alunos": 26},
+    {"identificador": "t03", "ano": 8, "numero_alunos": 24},
+    {"identificador": "t04", "ano": 8, "numero_alunos": 25},
+    {"identificador": "t05", "ano": 9, "numero_alunos": 27},
+    {"identificador": "t06", "ano": 9, "numero_alunos": 26},
+    {"identificador": "t07", "ano": 10, "numero_alunos": 28},
+    {"identificador": "t08", "ano": 10, "numero_alunos": 27},
+    {"identificador": "t09", "ano": 11, "numero_alunos": 30},
+    {"identificador": "t10", "ano": 12, "numero_alunos": 29}
+  ],
+  "disciplinas": [
+    {"identificador": "d01", "nome": "Matemática", "carga_semanal": 5, "tipo_sala_requerida": "normal"},
+    {"identificador": "d02", "nome": "Português", "carga_semanal": 5, "tipo_sala_requerida": "normal"},
+    {"identificador": "d03", "nome": "Inglês", "carga_semanal": 3, "tipo_sala_requerida": "normal"},
+    {"identificador": "d04", "nome": "Ciências", "carga_semanal": 4, "tipo_sala_requerida": "laboratorio"},
+    {"identificador": "d05", "nome": "História", "carga_semanal": 3, "tipo_sala_requerida": "normal"},
+    {"identificador": "d06", "nome": "Geografia", "carga_semanal": 3, "tipo_sala_requerida": "normal"},
+    {"identificador": "d07", "nome": "Física", "carga_semanal": 2, "tipo_sala_requerida": "laboratorio"},
+    {"identificador": "d08", "nome": "Química", "carga_semanal": 2, "tipo_sala_requerida": "laboratorio"},
+    {"identificador": "d09", "nome": "Biologia", "carga_semanal": 2, "tipo_sala_requerida": "laboratorio"},
+    {"identificador": "d10", "nome": "Educação Física", "carga_semanal": 2, "tipo_sala_requerida": "normal"},
+    {"identificador": "d11", "nome": "Artes", "carga_semanal": 2, "tipo_sala_requerida": "normal"},
+    {"identificador": "d12", "nome": "Informática", "carga_semanal": 2, "tipo_sala_requerida": "laboratorio"}
+  ],
+  "salas": [
+    {"identificador": "s01", "capacidade": 30, "tipo": "normal", "dias_disponiveis": []},
+    {"identificador": "s02", "capacidade": 30, "tipo": "normal", "dias_disponiveis": []},
+    {"identificador": "s03", "capacidade": 30, "tipo": "normal", "dias_disponiveis": []},
+    {"identificador": "s04", "capacidade": 30, "tipo": "normal", "dias_disponiveis": []},
+    {"identificador": "s05", "capacidade": 30, "tipo": "normal", "dias_disponiveis": []},
+    {"identificador": "s06", "capacidade": 30, "tipo": "normal", "dias_disponiveis": []},
+    {"identificador": "s07", "capacidade": 20, "tipo": "laboratorio", "dias_disponiveis": []},
+    {"identificador": "s08", "capacidade": 20, "tipo": "laboratorio", "dias_disponiveis": []}
+  ],
+  "casamentos": [
+    {"professor_a": "p01", "professor_b": "p03"},
+    {"professor_a": "p06", "professor_b": "p11"}
+  ],
+  "relacoes_filho": [
+    {"professor_pai": "p01", "professor_mae": "p03", "identificador_turma_filho": "t07"}
+  ]
+}

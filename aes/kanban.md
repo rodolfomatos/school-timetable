@@ -21,6 +21,7 @@
 | T015 | Fix F-004/F-005: CP-SAT S09/S10 penalização sem condição | Concluído | Build | Alta (MAJOR) |
 | T016 | Fix F-006: Avaliação não incremental | Concluído | Build | Alta (MAJOR) |
 | T017 | Fix F-007 a F-011: Findings MINOR | Concluído | Build | Média (MINOR) |
+| T018 | Validação com dados reais de escola | Pendente | Build | Alta |
 
 ## Regras
 - Um ticket só entra em "Build" com spec aprovada em "Plan".
