@@ -1,66 +1,89 @@
+# README — School Timetable (Plataforma Web)
+
 # school-timetable
 
-Gerador de horários escolares em Python, baseado em práticas de engenharia AES e na literatura de automated timetabling.
+Gerador de horários escolares com plataforma web completa, baseado em práticas de engenharia AES e na literatura de automated timetabling.
 
-## O problema
-O horário escolar é **NP-hard** (redução direta da coloração de grafos). Não existe uma única classe de problema que sirva para todas as escolas. A literatura (ITC 2002/2003/2007, surveys de Burke, Schaerf, Ceschia et al., Tan et al. 2021) mostra que:
+## O que é
 
-- Metaheurísticas de busca local (**Tabu Search**, **Simulated Annealing**) batem algoritmos genéticos puros.
-- A função objetivo deve ser **aditiva** (soma de penalidades), nunca um produto multiplicativo de pesos gigantes.
-- Um **seed parcial imutável** (~30% dos slots) reduz drasticamente o espaço de busca.
-- O horário final requer **ajuste manual** por parte da escola.
-
-## Estrutura
-```
-aes/              # Artefatos do sistema AES (plan, build, verify, review, learn, tickets, metrics, shadow)
-src/timetable/    # Código fonte Python
-tests/            # Testes unitários e de integração
-data/             # Dados de exemplo e fixtures
-docs/             # Documentação técnica
-```
-
-## Começar
-```bash
-make setup      # cria venv e instala dependências
-make test       # executa testes
-make lint       # executa linter
-make tree       # lista ficheiros do projeto
-```
-
-## Interface de Linha de Comando (CLI)
-
-A CLI permite gerar, validar e fazer benchmark de horários sem escrever código Python:
-
-```bash
-# Gerar um horário (Simulated Annealing, padrão)
-python scripts/cli.py generate --input data/sample_school.json --output horario.json --solver sa --tempo 60
-
-# Gerar com Tabu Search
-python scripts/cli.py generate --input data/real_school.json --output horario.json --solver ts --tempo 60
-
-# Gerar com CP-SAT (requer ortools)
-python scripts/cli.py generate --input data/sample_school.json --output horario.json --solver cpsat --tempo 60
-
-# Validar um horário contra restrições duras
-python scripts/cli.py validate --input horario.json
-
-# Executar benchmark comparativo
-python scripts/cli.py benchmark --input data/real_school.json --tempo 30
-```
+É um sistema completo para geração e gestão de horários escolares/académicos, com:
+- **Solver Python** (Tabu Search, Simulated Annealing, CP-SAT/OR-Tools)
+- **API REST FastAPI** com autenticação JWT e RBAC
+- **Frontend React** com design system `@ilabuporto/design-system` (U.Porto)
+- **Docker Compose** para instalação local ou SaaS
+- **Testes E2E com Playwright**
 
 ## Estrutura
 ```
-aes/              # Artefatos do sistema AES (plan, build, verify, review, learn, tickets, metrics, shadow)
-src/timetable/    # Código fonte Python
-scripts/          # Scripts utilitários (cli.py, benchmark_real.py)
-tests/            # Testes unitários e de integração
-data/             # Dados de exemplo e fixtures
-docs/             # Documentação técnica
+school-timetable/
+├── src/timetable/          # Solver Python (core)
+├── backend/                # API FastAPI + autenticação + RBAC
+├── web/                    # Frontend React + design system
+├── e2e/                    # Testes Playwright
+├── docker/                 # Dockerfiles + docker-compose
+├── aes/                    # Artefatos do sistema AES
+├── docs/                   # Documentação técnica
+├── tests/                  # Testes unitários Python
+└── data/                   # Dados de exemplo
 ```
 
-## Documentação
-- `docs/literature_review.md` — papers e referências
+## Começar (Desenvolvimento Local)
+
+### Backend
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+API disponível em `http://localhost:8000` (docs em `/docs`)
+
+### Frontend
+```bash
+cd web
+npm install
+npm run dev
+```
+Frontend disponível em `http://localhost:3000`
+
+### Com Docker (Recomendado)
+```bash
+docker compose up --build
+```
+- Frontend: `http://localhost:3000`
+- API: `http://localhost:8000`
+- PostgreSQL: `localhost:5432`
+
+## Personas e Fluxos
+
+| Persona | O que pode fazer |
+|---------|------------------|
+| **Docente** | Marcar indisponibilidades no calendário com justificação; contestar slots atribuídos; ver o seu horário |
+| **Admin** | Gerir utilizadores, salas, disciplinas, turmas; gerar horário; aceitar/rejeitar contestações; publicar |
+| **Coordenador** | Mesmas permissões de admin para gestão de entidades |
+| **Estudante** | Ver horário da sua turma; receber notificações de alterações |
+
+## Documentação Técnica
+- `docs/literature_review.md` — papers e referências sobre timetabling
 - `docs/architecture.md` — arquitetura de software
-- `docs/constraints.md` — catálogo de restrições duras e moles
-- `docs/QUALITY_GATES.md` — quality gates do projeto
+- `docs/constraints.md` — catálogo de restrições duras e moles (incluindo faculdade)
+- `docs/QUALITY_GATES.md` — quality gates do projeto AES
 - `aes/kanban.md` — quadro de tickets AES
+- `aes/shadow/` — shadow docs com decisões e escore epistémico
+
+## Testes
+```bash
+# Testes Python (backend + solver)
+cd /opt/school-timetable
+make test          # 80+ testes, cobertura ≥ 80%
+make lint          # ruff
+
+# Testes E2E (frontend web)
+cd e2e
+npm install
+npx playwright install
+npm test           # Playwright headless
+```
+
+## License
+
+MIT

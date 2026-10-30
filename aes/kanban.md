@@ -1,4 +1,4 @@
-# AES Kanban — school-timetable
+# AES Kanban — school-timetable (Web Platform Phase)
 
 ## Tickets
 
@@ -25,8 +25,17 @@
 | T019 | Interface de linha de comando (CLI) | Concluído | Build | Alta |
 | T020 | Exportação iCal/CSV | Concluído | Build | Média |
 | T021 | Property-based testing para restrições duras | Concluído | Build | Média |
+| T022 | Backend API FastAPI + autenticação JWT + RBAC | Concluído | Build | Alta |
+| T023 | Modelo de dados alargado (salas específicas, setup/limpeza, almoço, furos, não-periodicidade) | Concluído | Build | Alta |
+| T024 | Frontend React + ilabuporto-design-system (calendário, tabelas, formulários) | Concluído | Build | Alta |
+| T025 | Fluxo de contestações docente ↔ admin | Concluído | Build | Alta |
+| T026 | Docker Compose (on-premise / SaaS) | Concluído | Build | Alta |
+| T027 | Testes E2E com Playwright (fluxos completos) | Concluído | Verify | Alta |
+| T028 | Revisão hostil de segurança e UX | Concluído | Review | Alta |
+| T029 | Captura de aprendizados da fase web | Concluído | Learn | Média |
 
 ## Regras
 - Um ticket só entra em "Build" com spec aprovada em "Plan".
 - Não há código sem ticket associado.
 - Qualquer regressão abre ticket novo.
+- Todos os testes E2E com Playwright devem passar antes de fechar o ticket.

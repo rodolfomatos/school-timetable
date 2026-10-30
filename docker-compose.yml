@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-school}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-school}
+      POSTGRES_DB: ${POSTGRES_DB:-school_timetable}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-school} -d ${POSTGRES_DB:-school_timetable}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-school}:${POSTGRES_PASSWORD:-school}@postgres:5432/${POSTGRES_DB:-school_timetable}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - FRONTEND_URL=http://localhost:3000
+      - SOLVER_TIMEOUT_SECONDS=60
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

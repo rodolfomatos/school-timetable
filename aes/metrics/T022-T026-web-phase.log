@@ -1,0 +1,44 @@
+# Shadow Doc SD-METRICS-001 — Métricas da Fase Web
+
+## Proveniência
+Métricas registadas em 30/10/2026 após conclusão da fase web (T022-T026).
+
+## Estatísticas de Código
+
+| Componente | Ficheiros | Linhas Aproximadas |
+|------------|-----------|-------------------|
+| Backend (FastAPI) | 20+ | ~1.200 |
+| Frontend (React) | 15+ | ~1.500 |
+| Testes E2E (Playwright) | 5 | ~200 |
+| Docker | 5 | ~150 |
+| AES artifacts | 15+ | ~2.000 |
+
+## Cobertura de Testes
+
+| Tipo | Status |
+|------|--------|
+| Testes unitários Python (solver existente) | 80 testes, 90.90% cobertura |
+| Testes backend (FastAPI) | Pendente |
+| Testes frontend (vitest) | Pendente |
+| Testes E2E (Playwright) | 5 testes criados, a executar |
+
+## Decisões de Arquitetura
+
+| Decisão | Alternativa considerada | Porquê esta escolha |
+|---------|------------------------|---------------------|
+| FastAPI | Django | Mais leve, melhor para API + solver Python |
+| React + Vite | Next.js | Mais simples, menor bundle para uso interno |
+| `@ilabuporto/design-system` | Material UI / Tailwind puro | Identidade institucional U.Porto, componentes prontos |
+| Docker Compose | Kubernetes | Simplicidade para instalação on-premise |
+| PostgreSQL | SQLite | Suporte a múltiplos utilizadores concorrentes |
+
+## Próximos Tickets (Backlog)
+
+| ID | Título | Prioridade |
+|----|--------|------------|
+| T030 | Fix F-012: JWT em cookies httpOnly | Alta (BLOCKER) |
+| T031 | Fix F-013: Sanitização de entrada XSS | Alta (MAJOR) |
+| T032 | Fix F-014: Rate limiting no solver | Alta (MAJOR) |
+| T033 | Fix F-015: Remover credenciais do .env.example | Alta (MAJOR) |
+| T034 | Fix F-016: Auditar contraste WCAG AA | Média (MINOR) |
+| T035 | Fix F-017: Loading states consistentes | Média (MINOR) |

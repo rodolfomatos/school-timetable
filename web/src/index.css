@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import styles do design system @ilabuporto/design-system */
+@import "@ilabuporto/design-system/styles.css";
+
+@layer base {
+  :root {
+    --brand: #009FDF;
+    --accent: #22c55e;
+    --destructive: #ef4444;
+    --warning: #eab308;
+    --info: #3b82f6;
+  }
+
+  html.dark {
+    --brand: #3ab4ff;
+  }
+}
+
+@layer components {
+  .btn-brand {
+    @apply bg-brand text-white px-4 py-2 rounded-md font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-900 px-4 py-2 rounded-md font-medium hover:bg-gray-300 transition-colors;
+  }
+
+  .btn-destructive {
+    @apply bg-destructive text-white px-4 py-2 rounded-md font-medium hover:bg-red-600 transition-colors;
+  }
+
+  .input-field {
+    @apply block w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm;
+  }
+}
