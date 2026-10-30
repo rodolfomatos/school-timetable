@@ -1,0 +1,26 @@
+# Métricas AES — T012 (F-001 BLOCKER) e T013 (F-002 MAJOR)
+Data: 2026-10-29
+
+## Testes
+- Total: 64
+- Passou: 64
+- Falhou: 0
+- Skipped: 1
+- Cobertura total: 90.19% (gate: ≥ 80%)
+- Cobertura local_search.py: 91% (era 81%)
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- src/timetable/local_search.py: correção F-001 (chaves tabu não-None) + F-002 (sincronização tabu_set/deque)
+- tests/test_local_search.py: 7 novos testes para chaves de tabu e sincronização
+- aes/kanban.md: T012, T013 marcados como Concluído
+- aes/tickets/T012-fix-tabu-chave.md: estado atualizado
+- aes/tickets/T013-fix-tabu-sincronizacao.md: estado atualizado
+- aes/shadow/SD-BUILD-005.md: shadow doc de build
+- aes/metrics/T012-T013-verificacao.log: este ficheiro
+
+## Qualidade
+Todos os quality gates do AES estão verdes. F-001 (BLOCKER) e F-002 (MAJOR) estão corrigidos.

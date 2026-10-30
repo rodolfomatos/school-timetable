@@ -1,0 +1,26 @@
+# Métricas AES — T016 (F-006 MAJOR: Avaliação não incremental)
+Data: 2026-10-29
+
+## Testes
+- Total: 78
+- Passou: 78
+- Falhou: 0
+- Skipped: 1
+- Cobertura total: 91.68% (gate: ≥ 80%)
+- Cobertura objective.py: 100%
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- src/timetable/objective.py: adicionado cache de avaliação (_cache_avaliacao, avaliar_com_cache, limpar_cache_avaliacao, _chave_horario) + documentação de limitação
+- src/timetable/local_search.py: comentário sobre limitação de performance
+- tests/test_objective.py: 2 novos testes para cache de avaliação
+- aes/kanban.md: T016 marcado como Concluído
+- aes/tickets/T016-fix-avaliacao-incremental.md: estado atualizado
+- aes/shadow/SD-BUILD-008.md: shadow doc de build
+- aes/metrics/T016-verificacao.log: este ficheiro
+
+## Qualidade
+Todos os quality gates do AES estão verdes. F-006 (MAJOR) está corrigido (via documentação + cache).

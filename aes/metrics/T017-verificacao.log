@@ -1,0 +1,29 @@
+# Métricas AES — T017 (F-007 a F-011 MINOR)
+Data: 2026-10-29
+
+## Testes
+- Total: 80
+- Passou: 80
+- Falhou: 0
+- Skipped: 1
+- Cobertura total: 90.90% (gate: ≥ 80%)
+- Cobertura ui.py: 85%
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- src/timetable/constraints.py: S03 refatorada (expressão mais clara)
+- src/timetable/ui.py: parâmetro `validar` em `mover_aula`/`trocar_aulas`; validação de estrutura JSON
+- src/timetable/local_search.py: parâmetro não usado renomeado com prefixo `_`
+- tests/test_integration.py: verificação de `verificar_hard == []`
+- tests/test_ui.py: 2 novos testes de validação JSON
+- aes/kanban.md: T017 marcado como Concluído
+- aes/tickets/T017-fix-minor-findings.md: estado atualizado
+- aes/shadow/SD-BUILD-009.md: shadow doc de build
+- aes/metrics/T017-verificacao.log: este ficheiro
+
+## Qualidade
+Todos os quality gates do AES estão verdes. Todos os 11 findings do review hostil estão corrigidos.
+O projeto está pronto para avançar para a fase Learn.

@@ -1,0 +1,28 @@
+{
+  "escola": "Exemplo",
+  "ano_letivo": "2026/2027",
+  "slots": [
+    {"dia": "segunda", "hora": 1},
+    {"dia": "segunda", "hora": 2},
+    {"dia": "terca", "hora": 1},
+    {"dia": "terca", "hora": 2}
+  ],
+  "professores": [
+    {"identificador": "p1", "nome": "Prof. Matemática", "dia_folga_preferido": "sexta", "prefere_manha": true},
+    {"identificador": "p2", "nome": "Prof. Português", "dia_folga_preferido": "segunda", "prefere_manha": false}
+  ],
+  "turmas": [
+    {"identificador": "t1", "ano": 10, "numero_alunos": 25},
+    {"identificador": "t2", "ano": 10, "numero_alunos": 25}
+  ],
+  "disciplinas": [
+    {"identificador": "m1", "nome": "Matemática", "carga_semanal": 4, "tipo_sala_requerida": "normal"},
+    {"identificador": "p1", "nome": "Português", "carga_semanal": 4, "tipo_sala_requerida": "normal"}
+  ],
+  "salas": [
+    {"identificador": "s1", "capacidade": 30, "tipo": "normal"},
+    {"identificador": "s2", "capacidade": 30, "tipo": "normal"}
+  ],
+  "casamentos": [],
+  "relacoes_filho": []
+}

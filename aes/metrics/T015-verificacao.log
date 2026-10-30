@@ -1,0 +1,25 @@
+# Métricas AES — T015 (F-004, F-005 MAJOR: CP-SAT S09/S10)
+Data: 2026-10-29
+
+## Testes
+- Total: 76
+- Passou: 76
+- Falhou: 0
+- Skipped: 1
+- Cobertura total: 91.52% (gate: ≥ 80%)
+- Cobertura cp_sat_baseline.py: 90%
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- src/timetable/cp_sat_baseline.py: corrigido F-004 (S09 com condição > 2) e F-005 (S10 com condição >= 5)
+- tests/test_cp_sat.py: 3 novos testes para S09/S10 com limiar
+- aes/kanban.md: T015 marcado como Concluído
+- aes/tickets/T015-fix-cp-sat-s09-s10.md: estado atualizado
+- aes/shadow/SD-BUILD-007.md: shadow doc de build
+- aes/metrics/T015-verificacao.log: este ficheiro
+
+## Qualidade
+Todos os quality gates do AES estão verdes. F-004 e F-005 (MAJOR) estão corrigidos.

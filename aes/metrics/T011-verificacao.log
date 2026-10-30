@@ -1,0 +1,23 @@
+# Métricas AES — T011 Equilíbrio Humano + Satisficing
+Data: 2026-10-29
+
+## Testes
+- Total: 24
+- Passou: 24
+- Falhou: 0
+- Cobertura: 80.89% (gate: ≥ 80%)
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- docs/constraints.md: adicionadas S08, S09, S10 + secção "Satisficing"
+- src/timetable/constraints.py: implementação de S08, S09, S10
+- aes/shadow/SD-LEARN-001.md: shadow doc (julgamento de qualidade, fatores humanos, satisficing)
+- docs/literature_review.md: secção sobre julgamento de qualidade e satisficing
+- aes/tickets/T011-equilibrio-humano.md: novo ticket
+- aes/kanban.md: T003, T010, T011 marcados como Concluído
+
+## Qualidade
+Todos os quality gates do AES estão verdes.

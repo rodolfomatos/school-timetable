@@ -1,0 +1,25 @@
+# Métricas AES — T014 (F-003 MAJOR: Restrições Moles S04-S07)
+Data: 2026-10-29
+
+## Testes
+- Total: 73
+- Passou: 73
+- Falhou: 0
+- Skipped: 1
+- Cobertura total: 91.44% (gate: ≥ 80%)
+- Cobertura constraints.py: 94%
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- src/timetable/constraints.py: implementadas S04, S05, S06, S07
+- tests/test_constraints.py: 9 novos testes para S04-S07
+- aes/kanban.md: T014 marcado como Concluído
+- aes/tickets/T014-fix-restricoes-moles-faltantes.md: estado atualizado
+- aes/shadow/SD-BUILD-006.md: shadow doc de build
+- aes/metrics/T014-verificacao.log: este ficheiro
+
+## Qualidade
+Todos os quality gates do AES estão verdes. F-003 (MAJOR) está corrigido.

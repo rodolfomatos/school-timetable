@@ -1,0 +1,25 @@
+# Métricas AES — T005 Metaheurística Refinada
+Data: 2026-10-29
+
+## Testes
+- Total: 45
+- Passou: 45
+- Falhou: 0
+- Skipped: 1
+- Cobertura total: 85.47% (gate: ≥ 80%)
+- Cobertura local_search.py: 81%
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- src/timetable/local_search.py: refinamento completo (exchange/modify, slots imutáveis, critério de parada satisficing, lista tabu FIFO, semente opcional)
+- tests/test_local_search.py: 17 testes específicos de metaheurística
+- aes/kanban.md: T005 marcado como Concluído
+- aes/tickets/T005-metaheuristica.md: estado atualizado
+- aes/shadow/SD-BUILD-003.md: shadow doc de build
+- aes/metrics/T005-verificacao.log: este ficheiro
+
+## Qualidade
+Todos os quality gates do AES (Plan→Build→Verify) estão verdes.

@@ -1,0 +1,25 @@
+# Métricas AES — T004 Linha de base exata CP-SAT
+Data: 2026-10-29
+
+## Testes
+- Total: 32
+- Passou: 32
+- Falhou: 0
+- Skipped: 1 (CP-SAT sem ortools, ambiente sem a biblioteca)
+- Cobertura total: 86.89% (gate: ≥ 80%)
+- Cobertura cp_sat_baseline.py: 89%
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- src/timetable/cp_sat_baseline.py: implementação completa do CPSATSolver
+- tests/test_cp_sat.py: 8 testes de CP-SAT (fallback, slots, restrições duras, disponibilidade)
+- aes/kanban.md: T004 marcado como Concluído
+- aes/tickets/T004-cp-sat-baseline.md: estado atualizado
+- aes/shadow/SD-BUILD-002.md: shadow doc de build
+- aes/metrics/T004-verificacao.log: este ficheiro
+
+## Qualidade
+Todos os quality gates do AES (Plan→Build→Verify) estão verdes.

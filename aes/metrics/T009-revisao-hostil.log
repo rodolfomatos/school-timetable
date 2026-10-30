@@ -1,0 +1,29 @@
+# Métricas AES — T009 Revisão Hostil
+Data: 2026-10-29
+
+## Veredito
+**APROVADO COM CONDIÇÕES**
+
+## Findings
+| ID | Severidade | Descrição | Ticket de correção |
+|----|-----------|-----------|-------------------|
+| F-001 | BLOCKER | Tabu Search: chave tabu sempre None | T012 |
+| F-002 | MAJOR | Tabu Search: tabu_set não sincronizado | T013 |
+| F-003 | MAJOR | Restrições moles S04-S07 não implementadas | T014 |
+| F-004 | MAJOR | CP-SAT: S09 penaliza sem condição > 2 | T015 |
+| F-005 | MAJOR | CP-SAT: S10 penaliza sem condição >= 5 | T015 |
+| F-006 | MAJOR | Avaliação não incremental | T016 |
+| F-007 | MINOR | S03 lógica ofuscada | T017 |
+| F-008 | MINOR | UI: sem verificação de conflitos | T017 |
+| F-009 | MINOR | JSON: sem validação de estrutura | T017 |
+| F-010 | MINOR | Testes de integração fracos | T017 |
+| F-011 | MINOR | Parâmetro não usado | T017 |
+
+## Resumo
+- 1 BLOCKER (deve ser corrigido antes de avançar para Learn)
+- 5 MAJOR (devem ser corrigidos antes de avançar para Learn)
+- 5 MINOR (podem ser adiados para backlog)
+- 6 tickets de correção criados: T012 a T017
+
+## Próximos passos
+Corrigir T012 (BLOCKER) e T013-T016 (MAJOR) antes de avançar para a fase Learn (T010 já concluído).

@@ -1,0 +1,23 @@
+# Métricas AES — T001 Scaffolding
+Data: 2026-10-29
+
+## Testes
+- Total: 24
+- Passou: 24
+- Falhou: 0
+- Cobertura: 81.07% (gate: ≥ 80%)
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Ficheiros criados
+- AES: kanban.md, T001-scaffolding.md, T001-spec.md, SD-PLAN-001.md, SD-BUILD-001.md, SD-VERIFY-001.md
+- Código: __init__.py, models.py, constraints.py, objective.py, seed.py, solver.py, cp_sat_baseline.py, local_search.py, ui.py
+- Testes: test_models.py, test_constraints.py, test_objective.py, test_seed.py, test_integration.py
+- Config: pyproject.toml, Makefile, README.md, .gitignore
+- Docs: architecture.md, constraints.md, QUALITY_GATES.md, literature_review.md
+- Dados: data/sample_school.json
+
+## Qualidade
+Todos os quality gates do AES (Plan→Build→Verify) estão verdes.

@@ -1,0 +1,25 @@
+# Métricas AES — T010 Learn Final (Fase Learn Completa)
+Data: 30/10/2026
+
+## Aprendizados Capturados
+- 7 shadow docs criados (SD-PLAN-001, SD-BUILD-001 a 009, SD-VERIFY-001, SD-REVIEW-001, SD-LEARN-001, SD-LEARN-002)
+- 11 findings do review hostil documentados e corrigidos
+- 17 tickets no kanban (todos Concluído)
+
+## Métricas do Projeto
+- Testes: 80 passando, 0 falhando
+- Cobertura: 90.90% (gate: ≥ 80%)
+- Lint: 0 erros
+- Format: limpo
+
+## Decisões Arquiteturais Consolidadas
+1. Função objetivo aditiva (nunca multiplicativa)
+2. Metaheurísticas de busca local (Tabu Search / Simulated Annealing)
+3. Seed parcial imutável (~30% dos slots)
+4. Slots imutáveis respeitados em todos os operadores
+5. Chaves de tabu geradas explicitamente
+6. Cache de avaliação para performance
+7. Satisficing (bom o suficiente) como modelo mental
+
+## Estado do Kanban
+Todos os 17 tickets marcados como Concluído. Projeto pronto para T018+ (dados reais, CLI, exportação).

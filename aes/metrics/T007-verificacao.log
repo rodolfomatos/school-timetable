@@ -1,0 +1,25 @@
+# Métricas AES — T007 Interface de Ajuste Manual
+Data: 2026-10-29
+
+## Testes
+- Total: 57
+- Passou: 57
+- Falhou: 0
+- Skipped: 1
+- Cobertura total: 87.93% (gate: ≥ 80%)
+- Cobertura ui.py: 90%
+
+## Lint
+- Ruff check: 0 erros
+- Ruff format: limpo
+
+## Alterações
+- src/timetable/ui.py: implementação completa (grade, mover, trocar, remover, validar, listar mutáveis/imutáveis)
+- tests/test_ui.py: 13 testes específicos de UI
+- aes/kanban.md: T007 marcado como Concluído
+- aes/tickets/T007-ui-ajuste-manual.md: estado atualizado
+- aes/shadow/SD-BUILD-004.md: shadow doc de build
+- aes/metrics/T007-verificacao.log: este ficheiro
+
+## Qualidade
+Todos os quality gates do AES (Plan→Build→Verify) estão verdes.
