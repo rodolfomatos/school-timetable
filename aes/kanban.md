@@ -23,7 +23,8 @@
 | T017 | Fix F-007 a F-011: Findings MINOR | Concluído | Build | Média (MINOR) |
 | T018 | Validação com dados reais de escola | Concluído | Build | Alta |
 | T019 | Interface de linha de comando (CLI) | Concluído | Build | Alta |
-| T020 | Exportação iCal/CSV | Pendente | Build | Média |
+| T020 | Exportação iCal/CSV | Concluído | Build | Média |
+| T021 | Property-based testing para restrições duras | Pendente | Build | Média |
 
 ## Regras
 - Um ticket só entra em "Build" com spec aprovada em "Plan".

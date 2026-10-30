@@ -3,7 +3,7 @@ name = "school-timetable"
 version = "0.1.0"
 description = "Gerador de horários escolares com busca local (Tabu Search / Simulated Annealing)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 authors = [
     { name = "Equipe school-timetable", email = "dev@school-timetable.local" },
 ]
@@ -15,6 +15,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "mypy>=1.8",
+    "hypothesis>=6.0",
 ]
 solver = [
     "ortools>=9.8",
