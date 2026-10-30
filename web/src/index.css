@@ -12,6 +12,12 @@
     --destructive: #ef4444;
     --warning: #eab308;
     --info: #3b82f6;
+    --text-dark-primary: #111827;
+    --text-dark-secondary: #4b5563;
+    --text-dark-tertiary: #9ca3af;
+    --text-light-primary: #f9fafb;
+    --text-light-secondary: #d1d5db;
+    --text-light-tertiary: #9ca3af;
   }
 
   html.dark {
@@ -38,5 +44,25 @@
 
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm;
+  }
+
+  /* Utilitários de contraste WCAG AA */
+  .text-dark-primary {
+    @apply text-gray-900 dark:text-white;
+  }
+  .text-dark-secondary {
+    @apply text-gray-600 dark:text-gray-300;
+  }
+  .text-dark-tertiary {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+  .text-light-primary {
+    @apply text-white dark:text-white;
+  }
+  .text-light-secondary {
+    @apply text-gray-600 dark:text-gray-300;
+  }
+  .text-light-tertiary {
+    @apply text-gray-500 dark:text-gray-400;
   }
 }

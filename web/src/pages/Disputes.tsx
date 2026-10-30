@@ -3,6 +3,7 @@ import { useScheduleStore } from "@/stores/scheduleStore";
 import { useAuthStore } from "@/stores/authStore";
 import { disputeService } from "@/services/api";
 import { useEffect, useState } from "react";
+import { sanitizeHtml } from "@/utils/sanitize";
 
 export default function Disputes() {
   const { user } = useAuthStore();
@@ -13,11 +14,16 @@ export default function Disputes() {
   const [reason, setReason] = useState("");
   const [justification, setJustification] = useState("");
   const [loading, setLoading] = useState(false);
+  const [disputeActionLoading, setDisputeActionLoading] = useState<Set<number>>(
+    new Set()
+  );
   const [error, setError] = useState("");
 
   useEffect(() => {
     loadDisputes();
   }, []);
+
+  const isDisputeLoading = (id: number) => disputeActionLoading.has(id);
 
   const loadDisputes = async () => {
     try {
@@ -112,31 +118,82 @@ export default function Disputes() {
               {disputes.map((d) => (
                 <div key={d.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{d.reason}</p>
+                    <p
+                      className="text-sm font-medium text-gray-900 dark:text-white"
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(d.reason),
+                      }}
+                    />
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {d.justification} — Docente #{d.teacher_id}
+                      {sanitizeHtml(d.justification)} — Docente #{d.teacher_id}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => {
-                        disputeService.updateDispute(d.id, "accepted");
-                        setDisputes(disputes.filter((x) => x.id !== d.id));
+                      disabled={isDisputeLoading(d.id)}
+                      onClick={async () => {
+                        setDisputeActionLoading((prev) =>
+                          new Set([...prev, d.id])
+                        );
+                        try {
+                          await disputeService.updateDispute(
+                            d.id,
+                            "accepted"
+                          );
+                          setDisputes((prev) =>
+                            prev.filter((x) => x.id !== d.id)
+                          );
+                        } catch (err: any) {
+                          setError(
+                            err.response?.data?.detail ||
+                              "Erro ao aceitar contestação"
+                          );
+                        } finally {
+                          setDisputeActionLoading((prev) => {
+                            const next = new Set(prev);
+                            next.delete(d.id);
+                            return next;
+                          });
+                        }
                       }}
                     >
-                      Aceitar
+                      {isDisputeLoading(d.id) ? "A processar..." : "Aceitar"}
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => {
-                        disputeService.updateDispute(d.id, "rejected");
-                        setDisputes(disputes.filter((x) => x.id !== d.id));
+                      disabled={isDisputeLoading(d.id)}
+                      onClick={async () => {
+                        setDisputeActionLoading((prev) =>
+                          new Set([...prev, d.id])
+                        );
+                        try {
+                          await disputeService.updateDispute(
+                            d.id,
+                            "rejected"
+                          );
+                          setDisputes((prev) =>
+                            prev.filter((x) => x.id !== d.id)
+                          );
+                        } catch (err: any) {
+                          setError(
+                            err.response?.data?.detail ||
+                              "Erro ao rejeitar contestação"
+                          );
+                        } finally {
+                          setDisputeActionLoading((prev) => {
+                            const next = new Set(prev);
+                            next.delete(d.id);
+                            return next;
+                          });
+                        }
                       }}
                     >
-                      Rejeitar
+                      {isDisputeLoading(d.id)
+                        ? "A processar..."
+                        : "Rejeitar"}
                     </Button>
                   </div>
                 </div>
@@ -153,8 +210,15 @@ export default function Disputes() {
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            Contestar a aula de <strong>{selectedAssignment?.subject_name || "Desconhecida"}</strong> em{" "}
-            {selectedAssignment?.slot.dia} às {selectedAssignment?.slot.hora}h
+            Contestar a aula de{" "}
+            <strong
+              dangerouslySetInnerHTML={{
+                __html: sanitizeHtml(
+                  selectedAssignment?.subject_name || "Desconhecida"
+                ),
+              }}
+            ></strong>{" "}
+            em {selectedAssignment?.slot.dia} às {selectedAssignment?.slot.hora}h
           </p>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Motivo</label>

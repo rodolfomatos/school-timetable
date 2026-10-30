@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Annotated, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 IntPK = Annotated[int, Field(gt=0)]
+
+HTML_TAG_RE = re.compile(r"<[^>]*>")
+
+
+def _no_html(value: str) -> str:
+    """Rejeita strings que contenham tags HTML (prevenção XSS)."""
+    if HTML_TAG_RE.search(value or ""):
+        raise ValueError("Não são permitidas tags HTML neste campo")
+    return value
 
 
 # --- Schedule Version ---
@@ -97,6 +107,13 @@ class UnavailabilityBase(BaseModel):
     justification: str
     reason: str | None = None
 
+    @field_validator("justification", "reason")
+    @classmethod
+    def _no_html(cls, v: str | None) -> str | None:
+        if v is not None:
+            return _no_html(v)
+        return v
+
 
 class UnavailabilityCreate(UnavailabilityBase):
     teacher_id: int
@@ -115,6 +132,11 @@ class DisputeBase(BaseModel):
     assignment_id: int
     reason: str = Field(min_length=1)
     justification: str
+
+    @field_validator("reason", "justification")
+    @classmethod
+    def _no_html(cls, v: str) -> str:
+        return _no_html(v)
 
 
 class DisputeCreate(DisputeBase):

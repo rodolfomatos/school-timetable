@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.deps import get_db, get_current_user, require_role
+from app.main import limiter
 from app.models.user import User, Role
 from app.models.schedule import ScheduleVersion, ScheduleAssignment
 from app.services.solver_service import create_solver_task, get_solver_task
@@ -22,18 +23,20 @@ router = APIRouter(prefix="/scheduler", tags=["scheduler"])
 
 
 @router.post("/run", response_model=SolverRunResponse)
+@limiter.limit("5/minute")
 async def run_solver(
-    request: SolverRunRequest,
+    request: Request,
+    solver_request: SolverRunRequest,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
 ):
-    """Executa o solver de horário de forma assíncrona."""
+    """Executa o solver de horário de forma assíncrona (rate limited: 5/min)."""
 
     task_id = create_solver_task(
-        institution_id=request.institution_id,
-        solver=request.solver,
-        time_limit_seconds=request.time_limit_seconds,
-        additional_unavailabilities=request.additional_unavailabilities,
+        institution_id=solver_request.institution_id,
+        solver=solver_request.solver,
+        time_limit_seconds=solver_request.time_limit_seconds,
+        additional_unavailabilities=solver_request.additional_unavailabilities,
     )
 
     return SolverRunResponse(

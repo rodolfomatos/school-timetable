@@ -18,27 +18,8 @@ export default function Login() {
     try {
       const response = await authService.login(email, password);
       const { data } = response;
-      const user = {
-        id: 1, // Em produção, viria do token ou endpoint /users/me
-        email,
-        full_name: undefined,
-        role: "student",
-        institution_id: undefined,
-        is_active: true,
-        created_at: "",
-      };
-      useAuthStore.getState().login(
-        data.access_token,
-        data.refresh_token,
-        user
-      );
-      // Obter perfil do utilizador
-      try {
-        const profile = await authService.getMe();
-        useAuthStore.getState().setUser(profile.data);
-      } catch {
-        // Se falhar, mantém os dados básicos
-      }
+      // O cookie de acesso é definido automaticamente pelo navegador (httpOnly)
+      useAuthStore.getState().login(data);
       navigate("/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.detail || "Erro ao fazer login");

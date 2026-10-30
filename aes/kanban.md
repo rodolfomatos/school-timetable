@@ -33,6 +33,12 @@
 | T027 | Testes E2E com Playwright (fluxos completos) | Concluído | Verify | Alta |
 | T028 | Revisão hostil de segurança e UX | Concluído | Review | Alta |
 | T029 | Captura de aprendizados da fase web | Concluído | Learn | Média |
+| T030 | Fix F-012 (BLOCKER): JWT em cookies httpOnly | Pendente | Build | Alta (BLOCKER) |
+| T031 | Fix F-013 (MAJOR): Sanitização de entrada XSS | Pendente | Build | Alta (MAJOR) |
+| T032 | Fix F-014 (MAJOR): Rate limiting no solver | Pendente | Build | Alta (MAJOR) |
+| T033 | Fix F-015 (MAJOR): Credenciais no .env.example | Pendente | Build | Alta (MAJOR) |
+| T034 | Fix F-016 (MINOR): Contraste WCAG AA | Pendente | Build | Média (MINOR) |
+| T035 | Fix F-017 (MINOR): Loading states consistentes | Pendente | Build | Média (MINOR) |
 
 ## Regras
 - Um ticket só entra em "Build" com spec aprovada em "Plan".

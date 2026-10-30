@@ -11,3 +11,10 @@ htmlcov/
 .idea/
 .vscode/
 .DS_Store
+.env
+.env.*
+!docker/.env.example
+web/.env
+backend/.env
+web/node_modules/
+backend/node_modules/

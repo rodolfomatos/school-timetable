@@ -9,19 +9,8 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // Envia cookies (incluindo httpOnly) nas requisições
 });
-
-// Interceptor para adicionar o token de autorização
-api.interceptors.request.use(
-  (config) => {
-    const { token } = useAuthStore.getState();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // Interceptor para tratar erros de autenticação (401)
 api.interceptors.response.use(
@@ -37,7 +26,7 @@ api.interceptors.response.use(
 
 export const authService = {
   login: (email: string, password: string) =>
-    api.post<{ access_token: string; refresh_token: string }>("/auth/login", {
+    api.post<{ user: any }>("/auth/login", {
       email,
       password,
     }),
@@ -48,10 +37,8 @@ export const authService = {
     role?: string;
     institution_id?: string;
   }) => api.post("/auth/register", data),
-  refresh: (refreshToken: string) =>
-    api.post<{ access_token: string; refresh_token: string }>("/auth/refresh", {
-      refresh_token: refreshToken,
-    }),
+  refresh: () => api.post("/auth/refresh"),
+  logout: () => api.post("/auth/logout"),
   getMe: () => api.get("/users/me"),
   listUsers: () => api.get("/users"),
   updateUser: (id: number, data: Record<string, unknown>) =>
