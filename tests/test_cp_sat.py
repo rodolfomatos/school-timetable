@@ -1,10 +1,12 @@
 """Testes para o solver CP-SAT (linha de base exata).
 
-Os testes funcionam tanto com `ortools` instalado (validação completa) como
+Os testes funcionam tanto com ortools instalado (validação completa) como
 sem ele (fallback graceful).
-import pytest
 """
 
+from __future__ import annotations
+
+import pytest
 
 from timetable.constraints import ContextoRestricoes, calcular_penalidades_moles, verificar_hard
 from timetable.cp_sat_baseline import CPSATSolver

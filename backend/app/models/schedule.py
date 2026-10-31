@@ -19,8 +19,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.models.school import Class, Disciplina, Professor, Sala
-    from app.models.user import Teacher, User
+    from app.models.school import Course, Room, Subject, Teacher
+    from app.models.user import User
 
 IntPK = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=True)]
 UUIDPK = Annotated[
@@ -93,10 +93,10 @@ class ScheduleAssignment(Base):
 
     # Relacionamentos
     version: Mapped["ScheduleVersion"] = relationship(ScheduleVersion, back_populates="assignments")
-    class_: Mapped[Class] = relationship(Class, back_populates="assignments")
-    subject: Mapped[Disciplina] = relationship(Disciplina, back_populates="assignments")
-    teacher: Mapped[Professor] = relationship(Teacher, back_populates="assignments")
-    room: Mapped[Sala] = relationship(Sala, back_populates="assignments")
+    class_: Mapped[Course] = relationship(Course, back_populates="assignments")
+    subject: Mapped[Subject] = relationship(Subject, back_populates="assignments")
+    teacher: Mapped[Teacher] = relationship(Teacher, back_populates="assignments")
+    room: Mapped[Room] = relationship(Room, back_populates="assignments")
     disputes: Mapped[list["Dispute"]] = relationship(
         "Dispute", back_populates="assignment", cascade="all, delete-orphan"
     )
