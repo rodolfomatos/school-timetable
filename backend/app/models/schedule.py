@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, TYPE_CHECKING
+from typing import Annotated
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -17,10 +17,8 @@ from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-
-if TYPE_CHECKING:
-    from app.models.school import Course, Room, Subject, Teacher
-    from app.models.user import User
+from app.models.school import Course, Room, Subject, Teacher
+from app.models.user import User
 
 IntPK = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=True)]
 UUIDPK = Annotated[
