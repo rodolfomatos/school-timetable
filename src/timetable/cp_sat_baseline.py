@@ -91,23 +91,38 @@ class CPSATSolver:
         slots = self._gerar_slots(professores, salas)
 
         # --- Constrói a lista de sessões requeridas com lesson_session_id único ---
-        # Cada sessão é uma ocorrência individual que deve ser atribuída exatamente uma vez.
-        # Chave: lesson_session_id = f"{turma_id}_{disc_id}_{session_index}"
+        # Se o domínio forneceu sessões explícitas, usamos exactamente essas.
+        # Caso contrário, mantém-se o comportamento legacy (produto cartesiano)
+        # apenas para chamadas directas à biblioteca, sem currículo.
         aulas_requeridas: list[dict] = []
-        sessao_idx = 0
-        for turma_id, turma in turmas.items():
-            for disc_id, disciplina in disciplinas.items():
-                for sessao_idx_local in range(disciplina.carga_semanal):
-                    lesson_id = f"{turma_id}_{disc_id}_{sessao_idx_local}"
-                    aulas_requeridas.append(
-                        {
-                            "lesson_id": lesson_id,
-                            "turma_id": turma_id,
-                            "disc_id": disc_id,
-                            "session_index": sessao_idx_local,
-                        }
-                    )
-                    sessao_idx += 1
+        if ctx.sessoes_requeridas:
+            for sessao in ctx.sessoes_requeridas:
+                aulas_requeridas.append(
+                    {
+                        "lesson_id": sessao.lesson_id,
+                        "turma_id": sessao.turma,
+                        "disc_id": sessao.disciplina,
+                        "session_index": 0,
+                        "professores_elegiveis": set(sessao.professores_elegiveis)
+                        or None,
+                        "subgrupo_id": sessao.subgrupo_id,
+                    }
+                )
+        else:
+            for turma_id in turmas:
+                for disc_id, disciplina in disciplinas.items():
+                    for sessao_idx_local in range(disciplina.carga_semanal):
+                        lesson_id = f"{turma_id}_{disc_id}_{sessao_idx_local}"
+                        aulas_requeridas.append(
+                            {
+                                "lesson_id": lesson_id,
+                                "turma_id": turma_id,
+                                "disc_id": disc_id,
+                                "session_index": sessao_idx_local,
+                                "professores_elegiveis": None,
+                                "subgrupo_id": None,
+                            }
+                        )
 
         # Índice de professores qualificados por disciplina
         # Só criamos variáveis para combinações (professor, disciplina) admissíveis
@@ -143,13 +158,29 @@ class CPSATSolver:
             turm_id = sessao["turma_id"]
             # Determinar subgrupos para esta sessão
             subgrupos_da_turma = turma_subgrupos.get(turm_id, [])
-            subgrupos_a_usar = subgrupos_da_turma if subgrupos_da_turma else [None]
-            for prof_id in professores_por_disciplina.get(disc_id, []):
+            if sessao.get("subgrupo_id"):
+                subgrupos_a_usar = [sessao["subgrupo_id"]]
+            elif subgrupos_da_turma:
+                subgrupos_a_usar = subgrupos_da_turma
+            else:
+                subgrupos_a_usar = [None]
+
+            candidatos = professores_por_disciplina.get(disc_id, [])
+            elegiveis = sessao.get("professores_elegiveis")
+            if elegiveis:
+                candidatos = [p for p in candidatos if p in elegiveis]
+
+            for prof_id in candidatos:
                 for sala_id in salas_lista:
                     for slot in slots:
                         for sub_id in subgrupos_a_usar:
                             chave = (lesson_id, prof_id, sala_id, slot, sub_id)
                             vars_x[chave] = model.NewBoolVar(f"x_{chave}")
+
+        # Mapa lesson_id -> turma, usado pelas restrições H03/H07/H08.
+        sessao_turma: dict[str, str] = {
+            s["lesson_id"]: s["turma_id"] for s in aulas_requeridas
+        }
 
         # --- Restrição de cobertura: cada sessão tem exatamente uma atribuição ---
         # --- Restrição de cobertura: cada sessão tem exatamente uma atribuição ---
@@ -198,7 +229,7 @@ class CPSATSolver:
                         sum(
                             vars_x[(lid, p, s, sl, s_id)]
                             for (lid, p, s, sl, s_id), v in vars_x.items()
-                            if self._turma_da_sessao(lid, turmas, disciplinas) == turma_id
+                            if sessao_turma.get(lid) == turma_id
                             and sl == slot
                             and s_id == sub_id
                         )
@@ -225,11 +256,6 @@ class CPSATSolver:
         for c in casamentos:
             casados_pares.add((c.professor_a, c.professor_b))
             casados_pares.add((c.professor_b, c.professor_a))
-
-        # Pré-calcular turma de cada sessão para eficiência
-        sessao_turma: dict[str, str] = {}
-        for sessao in aulas_requeridas:
-            sessao_turma[sessao["lesson_id"]] = sessao["turma_id"]
 
         for (lid, p, s, sl, sub_id), v in vars_x.items():
             for pa, pb in casados_pares:

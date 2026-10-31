@@ -56,6 +56,9 @@ class Professor:
     carga_minima_semanal: int = 10
     # Disciplinas que o professor está qualificado para lecionar
     qualificacoes: frozenset[str] = field(default_factory=frozenset)
+    # Distingue "qualificações não especificadas" (legacy) de "nenhuma
+    # qualificação atribuída" (explicitamente vazio).
+    qualificacoes_definidas: bool = False
 
     def esta_disponivel(self, slot: Slot) -> bool:
         if not self.disponibilidade:
@@ -64,9 +67,9 @@ class Professor:
 
     def pode_lecionar(self, disciplina_id: str) -> bool:
         """Retorna True se o professor está qualificado para lecionar a disciplina."""
-        if not self.qualificacoes:
-            # Se não há qualificações definidas, assume que pode lecionar qualquer disciplina
-            # (compatibilidade com versões anteriores)
+        if not self.qualificacoes_definidas and not self.qualificacoes:
+            # Compatibilidade com versões anteriores: ausência de dados não é
+            # tratada como "qualificado para nada".
             return True
         return disciplina_id in self.qualificacoes
 
@@ -98,6 +101,33 @@ class Disciplina:
     nome: str
     carga_semanal: int
     tipo_sala_requerida: str = "normal"
+
+
+@dataclass(frozen=True)
+class SessaoRequerida:
+    """Uma sessão lectiva obrigatória, com identidade estável.
+
+    ``professores_elegiveis`` vazio significa que nenhum docente qualificado
+    foi encontrado; o construtor de domínio trata isso como erro explícito.
+    """
+
+    lesson_id: str
+    turma: str
+    disciplina: str
+    professores_elegiveis: tuple[str, ...] = ()
+    subgrupo_id: Optional[str] = None
+    duracao_slots: int = 1
+
+
+@dataclass(frozen=True)
+class Diagnostico:
+    """Problema detectado ao traduzir dados institucionais para o domínio."""
+
+    codigo: str
+    severidade: str  # "ERROR" | "WARNING"
+    mensagem: str
+    entidades: tuple[str, ...] = ()
+
 
 
 @dataclass

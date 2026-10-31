@@ -12,6 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -102,6 +103,12 @@ class Subject(Base):
     assignments: Mapped[list["ScheduleAssignment"]] = relationship(
         "ScheduleAssignment", back_populates="subject"
     )
+    class_links: Mapped[list["ClassSubject"]] = relationship(
+        "ClassSubject", back_populates="subject", cascade="all, delete-orphan"
+    )
+    teacher_links: Mapped[list["TeacherSubject"]] = relationship(
+        "TeacherSubject", back_populates="subject", cascade="all, delete-orphan"
+    )
 
 
 class Class(Base):
@@ -123,6 +130,9 @@ class Class(Base):
     course: Mapped["Course"] = relationship("Course", back_populates="classes")
     assignments: Mapped[list["ScheduleAssignment"]] = relationship(
         "ScheduleAssignment", back_populates="class_"
+    )
+    subject_links: Mapped[list["ClassSubject"]] = relationship(
+        "ClassSubject", back_populates="class_", cascade="all, delete-orphan"
     )
 
 
@@ -159,4 +169,68 @@ class Teacher(Base):
     )
     assignments: Mapped[list["ScheduleAssignment"]] = relationship(
         "ScheduleAssignment", back_populates="teacher"
+    )
+    subject_links: Mapped[list["TeacherSubject"]] = relationship(
+        "TeacherSubject", back_populates="teacher", cascade="all, delete-orphan"
+    )
+    class_subject_links: Mapped[list["ClassSubject"]] = relationship(
+        "ClassSubject", back_populates="teacher"
+    )
+
+
+class ClassSubject(Base):
+    """Relação curricular explícita: uma disciplina leccionada a uma turma.
+
+    ``teacher_id`` é opcional: quando preenchido, fixa o docente responsável;
+    quando vazio, o domínio escolhe entre os docentes qualificados.
+    """
+
+    __tablename__ = "class_subjects"
+    __table_args__ = (
+        UniqueConstraint("class_id", "subject_id", name="uq_class_subject"),
+    )
+
+    id: Mapped[IntPK]
+    class_id: Mapped[int] = mapped_column(
+        ForeignKey("classes.id"), nullable=False, index=True
+    )
+    subject_id: Mapped[int] = mapped_column(
+        ForeignKey("subjects.id"), nullable=False, index=True
+    )
+    teacher_id: Mapped[int | None] = mapped_column(
+        ForeignKey("teachers.id"), nullable=True, index=True
+    )
+    created_at: Mapped[CreatedAt]
+
+    # Relacionamentos
+    class_: Mapped["Class"] = relationship("Class", back_populates="subject_links")
+    subject: Mapped["Subject"] = relationship("Subject", back_populates="class_links")
+    teacher: Mapped["Teacher | None"] = relationship(
+        "Teacher", back_populates="class_subject_links"
+    )
+
+
+class TeacherSubject(Base):
+    """Qualificação explícita: docente habilitado a leccionar uma disciplina."""
+
+    __tablename__ = "teacher_subjects"
+    __table_args__ = (
+        UniqueConstraint("teacher_id", "subject_id", name="uq_teacher_subject"),
+    )
+
+    id: Mapped[IntPK]
+    teacher_id: Mapped[int] = mapped_column(
+        ForeignKey("teachers.id"), nullable=False, index=True
+    )
+    subject_id: Mapped[int] = mapped_column(
+        ForeignKey("subjects.id"), nullable=False, index=True
+    )
+    created_at: Mapped[CreatedAt]
+
+    # Relacionamentos
+    teacher: Mapped["Teacher"] = relationship(
+        "Teacher", back_populates="subject_links"
+    )
+    subject: Mapped["Subject"] = relationship(
+        "Subject", back_populates="teacher_links"
     )

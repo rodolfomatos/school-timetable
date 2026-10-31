@@ -202,18 +202,15 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 | F-047.2 | BLOCKER | T048 | Concluído (T048) |
 | F-047.3 | BLOCKER | T049 | Concluído (T049) |
 | F-047.4 | MAJOR | T050 | Concluído (T050) |
-| F-047.5 | MAJOR | T052 | Pendente |
-| F-047.6 | MAJOR | T052 | Pendente |
-| F-047.7 | MAJOR | T053 | Pendente |
-| F-013 | P0 | T051 | Pendente |
-| F-014 | P0 | T051 | Pendente |
+| F-013 | P0 | T051 | Concluído (T051) |
+| F-014 | P0 | T051 | Concluído (T051) |
 | F-016 | P0 | T052 | Pendente |
 | F-018 | P0 | T033 | Concluído |
 | F-008 | P1 | T055 | Pendente |
 | F-009 | P1 | T055 | Pendente |
 | F-010 | P1 | T055 | Pendente |
 | F-011 | P1 | T055 | Pendente |
-| F-015 | P1 | T051 | Pendente |
+| F-015 | P1 | T051 | Concluído (T051) |
 | F-016 | P1 | T052 | Pendente |
 | F-017 | P1 | T058 | Pendente |
 | F-019 | P2 | T058 | Pendente |

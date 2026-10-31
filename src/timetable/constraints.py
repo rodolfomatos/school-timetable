@@ -17,6 +17,7 @@ from .models import (
     RelacaoCasamento,
     RelacaoFilho,
     Sala,
+    SessaoRequerida,
     Slot,
     Subgrupo,
     Turma,
@@ -34,6 +35,10 @@ class ContextoRestricoes:
     casamentos: list[RelacaoCasamento]
     relacoes_filho: list[RelacaoFilho]
     subgrupos: dict[str, Subgrupo] = field(default_factory=dict)
+    # Sessões obrigatórias derivadas do currículo. Vazio = comportamento legacy
+    # (produto cartesiano turma × disciplina), usado apenas por chamadas directas
+    # à biblioteca. O backend passa sempre sessões explícitas.
+    sessoes_requeridas: list[SessaoRequerida] = field(default_factory=list)
 
     def professor_por_id(self, identificador: str) -> Optional[Professor]:
         return self.professores.get(identificador)
