@@ -50,6 +50,19 @@
 | T044 | Fase 8: Testes e Benchmarks (Auditoria) | Concluído | Verify | Alta |
 | T045 | Fase 9: Entregáveis (Auditoria) | Concluído | Learn | Alta |
 | T046 | Suporte a subgrupos de turma (divisão de aulas) | Em Progresso | Build | Alta |
+| T047 | Fase 0: Baseline e verificação independente (Auditoria) | Em Progresso | Review | P0 |
+| T048 | Fase 1: Bootstrap e imports do backend (Auditoria) | Pendente | Build | P0 |
+| T049 | Fase 2: Integridade do modelo SQLAlchemy (Auditoria) | Pendente | Build | P0 |
+| T050 | Fase 3: Autenticação e privilégios (Auditoria) | Pendente | Build | P0 |
+| T051 | Fase 3: Modelo de domínio e integração (Auditoria) | Pendente | Build | P0 |
+| T052 | Fase 3: Construção de solução inicial (Auditoria) | Pendente | Build | P0 |
+| T053 | Fase 4: Correção matemática do CP-SAT (Auditoria) | Pendente | Build | P0 |
+| T054 | Fase 4: Semântica dos subgrupos (Auditoria) | Pendente | Build | P0 |
+| T055 | Fase 5: Consistencia das restrições S01–S10 (Auditoria) | Pendente | Build | P1 |
+| T056 | Fase 6: Cache e avaliação incremental (Auditoria) | Pendente | Build | P1 |
+| T057 | Fase 7: SolverResult e jobs persistentes (Auditoria) | Pendente | Build | P1 |
+| T058 | Fase 7: Multi-tenancy, migrações e produção (Auditoria) | Pendente | Build | P1 |
+| T059 | Fase 8: Verificação epistemológica do AES (Auditoria) | Pendente | Learn | P1 |
 
 ## Regras
 - Um ticket só entra em "Build" com spec aprovada em "Plan".
