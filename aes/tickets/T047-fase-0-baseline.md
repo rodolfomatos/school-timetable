@@ -1,19 +1,24 @@
-# Ticket T047 — Fase 0: Baseline e verificação independente
+# Ticket T047 — Fase 0: Baseline e verificação independente — CONCLUÍDO
 
-## Contexto
-Iniciar o ciclo de auditoria com um baseline reproduzível. Nenhuma correcção funcional começa antes deste ticket produzir o relatório de evidência.
+## Estado
+**Concluído** (Plan → Build → Verify)
 
-## Objetivo
-Estabelecer o estado real do repositório e reproduzir os findings listados no plano de auditoria (T047–T059).
+## Resultado
+- docs/audit/T047-baseline.md criado com inventário completo de módulos, responsabilidades, dependências e cobertura
+- docs/audit/T047-findings.md criado com 26 findings (2 BLOCKER, 5 MAJOR, 6 P1, 4 P0, 2 P2, 1 P3, 5 MINOR)
+- Testes Python: 95 passando, 90.61% cobertura
+- Ruff lint: 0 erros
+- Ruff format: limpo
+- Nenhum código alterado nesta fase
 
-## Critérios de Aceitação
-[ ] Commit e ambiente identificados.
-[ ] Comandos de teste documentados e executados ou explicitamente marcados como bloqueados por dependência.
-[ ] Cada finding tem severidade, evidência, ficheiro/linha, reprodução e impacto.
-[ ] Findings não reproduzidos marcados UNCONFIRMED, não como bugs confirmados.
-[ ] T038–T046 reavaliados contra o código e testes.
-[ ] Nenhum código funcional alterado nesta fase.
-[ ] Relatório produzido em docs/audit/T047-baseline.md e docs/audit/T047-findings.md.
+## Critérios de Aceitação — Todos OK
+1. Commit e ambiente identificados ✅
+2. Comandos de teste documentados e executados ✅
+3. Cada finding tem severidade, evidência, ficheiro/linha, reprodução e impacto ✅
+4. Findings não reproduzidos marcados UNCONFIRMED ✅
+5. T038–T046 reavaliados contra o código e testes ✅
+6. Nenhum código funcional alterado nesta fase ✅
+7. Relatório produzido em docs/audit/T047-baseline.md e docs/audit/T047-findings.md ✅
 
-## Fase atual
-Plan → Build → Verify.
+## Fase Atual
+Concluído. Próximo: T048 (Fase 1 - Bootstrap e imports do backend).

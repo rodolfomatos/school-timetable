@@ -50,7 +50,7 @@
 | T044 | Fase 8: Testes e Benchmarks (Auditoria) | Concluído | Verify | Alta |
 | T045 | Fase 9: Entregáveis (Auditoria) | Concluído | Learn | Alta |
 | T046 | Suporte a subgrupos de turma (divisão de aulas) | Em Progresso | Build | Alta |
-| T047 | Fase 0: Baseline e verificação independente (Auditoria) | Em Progresso | Review | P0 |
+| T047 | Fase 0: Baseline e verificação independente (Auditoria) | Concluído | Review | P0 |
 | T048 | Fase 1: Bootstrap e imports do backend (Auditoria) | Pendente | Build | P0 |
 | T049 | Fase 2: Integridade do modelo SQLAlchemy (Auditoria) | Pendente | Build | P0 |
 | T050 | Fase 3: Autenticação e privilégios (Auditoria) | Pendente | Build | P0 |
