@@ -39,7 +39,8 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 - `User.unavailabilities` e `User.disputes` apontam para `RelacaoCasamento`/`RelacaoFilho` mas não existem como relacionamentos ORM válidos.  
 - `ScheduleAssignment` referencia `professor_id`, `sala_id`, `turma_id`, `disciplina_id` mas as relações não estão definidas corretamente.  
 **Impacto:** `configure_mappers()` falha com `InvalidRequestError` ou `NoForeignKeysError`.  
-**Condição de fechamento:** Corrigir todos os relacionamentos ORM para serem consistentes bidirecionalmente.
+**Condição de fechamento:** Corrigir todos os relacionamentos ORM para serem consistentes bidirecionalmente.  
+**Resolução (T049):** grafo corrigido e validado. `configure_mappers()` passa; teste de regressão falhava (2 failed) antes da correcção e passa depois (2 passed). Ver `aes/tickets/T049-fase-2-orm.md`.
 
 ---
 
@@ -196,9 +197,9 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 |---------|-----------|--------|--------|
 | F-101 | BLOCKER | T053 | Pendente |
 | F-102 | BLOCKER | T053 | Pendente |
-| F-047.1 | BLOCKER | T048 | Pendente |
-| F-047.2 | BLOCKER | T048 | Pendente |
-| F-047.3 | BLOCKER | T049 | Pendente |
+| F-047.1 | BLOCKER | T048 | Concluído (T048) |
+| F-047.2 | BLOCKER | T048 | Concluído (T048) |
+| F-047.3 | BLOCKER | T049 | Concluído (T049) |
 | F-047.4 | MAJOR | T050 | Pendente |
 | F-047.5 | MAJOR | T052 | Pendente |
 | F-047.6 | MAJOR | T052 | Pendente |

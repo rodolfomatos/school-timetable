@@ -17,7 +17,7 @@ from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.models.school import Course, Room, Subject, Teacher
+from app.models.school import Class, Room, Subject, Teacher
 from app.models.user import User
 
 IntPK = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=True)]
@@ -60,7 +60,7 @@ class ScheduleVersion(Base):
 
     # Relacionamentos
     assignments: Mapped[list["ScheduleAssignment"]] = relationship(
-        "ScheduleVersion", back_populates="assignments", cascade="all, delete-orphan"
+        "ScheduleAssignment", back_populates="version", cascade="all, delete-orphan"
     )
 
 
@@ -91,7 +91,7 @@ class ScheduleAssignment(Base):
 
     # Relacionamentos
     version: Mapped["ScheduleVersion"] = relationship(ScheduleVersion, back_populates="assignments")
-    class_: Mapped[Course] = relationship(Course, back_populates="assignments")
+    class_: Mapped[Class] = relationship(Class, back_populates="assignments")
     subject: Mapped[Subject] = relationship(Subject, back_populates="assignments")
     teacher: Mapped[Teacher] = relationship(Teacher, back_populates="assignments")
     room: Mapped[Room] = relationship(Room, back_populates="assignments")

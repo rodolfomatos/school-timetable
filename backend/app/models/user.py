@@ -13,7 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:  # noqa: F401
-    from app.models.school import Teacher, Unavailability, Dispute
+    from app.models.school import Teacher
 
 IntPK = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=True)]
 UUIDPK = Annotated[
@@ -57,12 +57,6 @@ class User(Base):
     # Relacionamentos
     teacher_profile: Mapped["Teacher | None"] = relationship(
         "Teacher", back_populates="user", uselist=False, cascade="all, delete-orphan"
-    )
-    unavailabilities: Mapped[list["Unavailability"]] = relationship(
-        "Unavailability", back_populates="teacher", cascade="all, delete-orphan"
-    )
-    disputes: Mapped[list["Dispute"]] = relationship(
-        "Dispute", back_populates="teacher", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
