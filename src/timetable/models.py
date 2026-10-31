@@ -12,16 +12,24 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class Slot:
-    """Unidade de tempo: (dia_semana, hora)."""
+    """Unidade de tempo com hora de início e fim para cálculo real de períodos."""
 
     dia: str  # ex. "segunda", "terca", ...
     hora: int  # ex. 1, 2, 3 ...
+    hora_inicio: int | None = None  # hora de início real (ex: 8 para 8h)
+    hora_fim: int | None = None  # hora de fim real (ex: 9 para 9h)
 
     def __hash__(self) -> int:
         return hash((self.dia, self.hora))
 
     def __str__(self) -> str:
         return f"{self.dia} {self.hora}h"
+
+    def eh_manha(self, limite_manha_tarde: int = 12) -> bool:
+        """Retorna True se o slot é considerado manhã com base na hora de início."""
+        if self.hora_inicio is not None:
+            return self.hora_inicio < limite_manha_tarde
+        return self.hora < limite_manha_tarde
 
 
 @dataclass(frozen=True)
@@ -46,17 +54,41 @@ class Professor:
     prefere_manha: bool = True
     carga_maxima_semanal: int = 30
     carga_minima_semanal: int = 10
+    # Disciplinas que o professor está qualificado para lecionar
+    qualificacoes: frozenset[str] = field(default_factory=frozenset)
 
     def esta_disponivel(self, slot: Slot) -> bool:
         if not self.disponibilidade:
             return True
         return slot in self.disponibilidade
 
+    def pode_lecionar(self, disciplina_id: str) -> bool:
+        """Retorna True se o professor está qualificado para lecionar a disciplina."""
+        if not self.qualificacoes:
+            # Se não há qualificações definidas, assume que pode lecionar qualquer disciplina
+            # (compatibilidade com versões anteriores)
+            return True
+        return disciplina_id in self.qualificacoes
+
 
 @dataclass(frozen=True)
 class Turma:
     identificador: str
     ano: int
+    numero_alunos: int
+
+
+@dataclass(frozen=True)
+class Subgrupo:
+    """Subdivisão de uma turma para disciplinas em regime articulado.
+
+    Exemplo: turma 10º Ano A dividida em "Grupo A" e "Grupo B" para Música,
+    onde cada grupo tem aula em horários diferentes.
+    """
+
+    identificador: str
+    turma_pai: str  # identificador da turma a que pertence
+    nome: str  # ex: "Grupo A", "Grupo B", "Subgrupo 1"
     numero_alunos: int
 
 
@@ -87,13 +119,18 @@ class RelacaoFilho:
 
 @dataclass
 class Aula:
-    """Uma atribuição única: turma, disciplina, professor, sala, slot."""
+    """Uma atribuição única: turma, disciplina, professor, sala, slot.
+
+    Opcionalmente associada a um subgrupo da turma (para disciplinas
+    em regime articulado, onde apenas parte dos alunos tem aula).
+    """
 
     turma: str
     disciplina: str
     professor: str
     sala: str
     slot: Slot
+    subgrupo_id: Optional[str] = None  # None = toda a turma
 
 
 @dataclass
@@ -115,8 +152,15 @@ class Horario:
     def sala_ocupada_em(self, sala: str, slot: Slot) -> bool:
         return any(a.sala == sala and a.slot == slot for a in self.aulas)
 
-    def turma_ocupada_em(self, turma: str, slot: Slot) -> bool:
-        return any(a.turma == turma and a.slot == slot for a in self.aulas)
+    def turma_ocupada_em(self, turma: str, slot: Slot, subgrupo_id: Optional[str] = None) -> bool:
+        """Verifica se uma turma (ou subgrupo específico) está ocupada em um slot.
+
+        Se subgrupo_id for fornecido, verifica apenas esse subgrupo.
+        Duas aulas da mesma turma podem ocorrer no mesmo slot se forem de subgrupos diferentes.
+        """
+        return any(
+            a.turma == turma and a.subgrupo_id == subgrupo_id and a.slot == slot for a in self.aulas
+        )
 
     def aulas_do_professor(self, professor: str) -> list[Aula]:
         return [a for a in self.aulas if a.professor == professor]

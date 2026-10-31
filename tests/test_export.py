@@ -1,7 +1,5 @@
 """Testes para o módulo de exportação (CSV/iCal)."""
 
-import csv
-import io
 import tempfile
 from pathlib import Path
 
@@ -47,9 +45,7 @@ def test_exportar_csv_gera_colunas_corretas():
     """O CSV deve ter as colunas corretas."""
 
     h = _horario_exemplo()
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".csv", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
         caminho = f.name
 
     try:
@@ -66,9 +62,7 @@ def test_exportar_csv_conteudo():
     """O CSV deve conter os dados corretos das aulas."""
 
     h = _horario_exemplo()
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".csv", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
         caminho = f.name
 
     try:
@@ -85,9 +79,7 @@ def test_exportar_ical_gera_cabecalho():
     """O iCal deve ter cabeçalho VCALENDAR."""
 
     h = _horario_exemplo()
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".ics", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".ics", delete=False, encoding="utf-8") as f:
         caminho = f.name
 
     try:
@@ -104,9 +96,7 @@ def test_exportar_ical_gera_eventos():
     """O iCal deve conter eventos VEVENT para cada aula."""
 
     h = _horario_exemplo()
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".ics", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".ics", delete=False, encoding="utf-8") as f:
         caminho = f.name
 
     try:
@@ -125,9 +115,7 @@ def test_exportar_formato_csv():
     """A função exportar com formato='csv' deve gerar CSV válido."""
 
     h = _horario_exemplo()
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".csv", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
         caminho = f.name
 
     try:
@@ -142,9 +130,7 @@ def test_exportar_formato_ical():
     """A função exportar com formato='ical' deve gerar iCal válido."""
 
     h = _horario_exemplo()
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".ics", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".ics", delete=False, encoding="utf-8") as f:
         caminho = f.name
 
     try:
@@ -199,9 +185,7 @@ def test_exportar_csv_ordena_por_dia_e_hora():
         )
     )
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".csv", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
         caminho = f.name
 
     try:

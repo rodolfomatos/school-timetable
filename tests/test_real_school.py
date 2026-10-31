@@ -4,11 +4,10 @@ import json
 import time
 from pathlib import Path
 
-from timetable.constraints import ContextoRestricoes, verificar_hard, calcular_penalidades_moles
+from timetable.constraints import ContextoRestricoes, verificar_hard
 from timetable.cp_sat_baseline import CPSATSolver
 from timetable.local_search import simulated_annealing, tabu_search
 from timetable.models import (
-    Aula,
     Disciplina,
     Horario,
     Professor,
@@ -65,9 +64,7 @@ def carregar_dataset_real() -> tuple[ContextoRestricoes, list[Slot]]:
             tipo_sala_requerida=d.get("tipo_sala_requerida", "normal"),
         )
 
-    slots = [
-        Slot(dia=s["dia"], hora=s["hora"]) for s in dados["slots"]
-    ]
+    slots = [Slot(dia=s["dia"], hora=s["hora"]) for s in dados["slots"]]
 
     # Casamentos e relações filho como objetos simples
     class RelCas:
@@ -188,6 +185,7 @@ def test_cp_sat_dados_reais_se_disponivel():
     solver = CPSATSolver()
     if not solver.esta_disponivel():
         import pytest
+
         pytest.skip("ortools não instalado")
 
     ctx, slots = carregar_dataset_real()

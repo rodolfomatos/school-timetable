@@ -1,4 +1,4 @@
-# AES Kanban — school-timetable (Web Platform Phase)
+# AES Kanban — school-timetable (Web Platform Phase + Auditoria)
 
 ## Tickets
 
@@ -33,12 +33,23 @@
 | T027 | Testes E2E com Playwright (fluxos completos) | Concluído | Verify | Alta |
 | T028 | Revisão hostil de segurança e UX | Concluído | Review | Alta |
 | T029 | Captura de aprendizados da fase web | Concluído | Learn | Média |
-| T030 | Fix F-012 (BLOCKER): JWT em cookies httpOnly | Pendente | Build | Alta (BLOCKER) |
-| T031 | Fix F-013 (MAJOR): Sanitização de entrada XSS | Pendente | Build | Alta (MAJOR) |
-| T032 | Fix F-014 (MAJOR): Rate limiting no solver | Pendente | Build | Alta (MAJOR) |
-| T033 | Fix F-015 (MAJOR): Credenciais no .env.example | Pendente | Build | Alta (MAJOR) |
-| T034 | Fix F-016 (MINOR): Contraste WCAG AA | Pendente | Build | Média (MINOR) |
-| T035 | Fix F-017 (MINOR): Loading states consistentes | Pendente | Build | Média (MINOR) |
+| T030 | Fix F-012 (BLOCKER): JWT em cookies httpOnly | Concluído | Build | Alta (BLOCKER) |
+| T031 | Fix F-013 (MAJOR): Sanitização de entrada XSS | Concluído | Build | Alta (MAJOR) |
+| T032 | Fix F-014 (MAJOR): Rate limiting no solver | Concluído | Build | Alta (MAJOR) |
+| T033 | Fix F-015 (MAJOR): Credenciais no .env.example | Concluído | Build | Alta (MAJOR) |
+| T034 | Fix F-016 (MINOR): Contraste WCAG AA | Concluído | Build | Média (MINOR) |
+| T035 | Fix F-017 (MINOR): Loading states consistentes | Concluído | Build | Média (MINOR) |
+| T036 | Fase 0: Baseline e Inventário (Auditoria) | Concluído | Build | Alta |
+| T037 | Fase 1: Auditoria de Restrições (Auditoria) | Concluído | Build | Alta |
+| T038 | Fase 2: Integridade do Modelo CP-SAT (Auditoria) | Concluído | Build | Alta |
+| T039 | Fase 3: Seed e Validador Independente (Auditoria) | Concluído | Build | Alta |
+| T040 | Fase 4: Resultado e Ciclo de Vida do Solver (Auditoria) | Concluído | Build | Alta |
+| T041 | Fase 5: Objetivo e Metaheurísticas (Auditoria) | Concluído | Build | Alta |
+| T042 | Fase 6: Avaliação Incremental e Cache (Auditoria) | Em Progresso | Build | Alta |
+| T043 | Fase 7: Backend e Operação (Auditoria) | Em Progresso | Build | Alta |
+| T044 | Fase 8: Testes e Benchmarks (Auditoria) | Concluído | Verify | Alta |
+| T045 | Fase 9: Entregáveis (Auditoria) | Concluído | Learn | Alta |
+| T046 | Suporte a subgrupos de turma (divisão de aulas) | Em Progresso | Build | Alta |
 
 ## Regras
 - Um ticket só entra em "Build" com spec aprovada em "Plan".

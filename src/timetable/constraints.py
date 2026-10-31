@@ -6,7 +6,7 @@ Restrições moles geram penalidades aditivas na função objetivo.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from .models import (
@@ -18,6 +18,7 @@ from .models import (
     RelacaoFilho,
     Sala,
     Slot,
+    Subgrupo,
     Turma,
 )
 
@@ -32,6 +33,7 @@ class ContextoRestricoes:
     disciplinas: dict[str, Disciplina]
     casamentos: list[RelacaoCasamento]
     relacoes_filho: list[RelacaoFilho]
+    subgrupos: dict[str, Subgrupo] = field(default_factory=dict)
 
     def professor_por_id(self, identificador: str) -> Optional[Professor]:
         return self.professores.get(identificador)
@@ -41,6 +43,9 @@ class ContextoRestricoes:
 
     def disciplina_por_id(self, identificador: str) -> Optional[Disciplina]:
         return self.disciplinas.get(identificador)
+
+    def subgrupo_por_id(self, identificador: str) -> Optional[Subgrupo]:
+        return self.subgrupos.get(identificador)
 
 
 @dataclass
@@ -73,14 +78,16 @@ def verificar_hard(horario: Horario, ctx: ContextoRestricoes) -> list[str]:
         if count > 1:
             violacoes.append(f"H02: sala {sala} em {slot} com {count} aulas")
 
-    # H03: turma não tem duas aulas no mesmo slot
-    turma_slot: dict[tuple[str, Slot], int] = {}
+    # H03: turma+subgrupo não tem duas aulas no mesmo slot
+    # Duas aulas da mesma turma podem ocorrer no mesmo slot se forem de subgrupos diferentes
+    turma_slot: dict[tuple[str, Optional[str], Slot], int] = {}
     for aula in horario.aulas:
-        chave = (aula.turma, aula.slot)
+        chave = (aula.turma, aula.subgrupo_id, aula.slot)
         turma_slot[chave] = turma_slot.get(chave, 0) + 1
-    for (turm, slot), count in turma_slot.items():
+    for (turm, sub, slot), count in turma_slot.items():
+        sub_str = sub if sub else "turma_inteira"
         if count > 1:
-            violacoes.append(f"H03: turma {turm} em {slot} com {count} aulas")
+            violacoes.append(f"H03: turma {turm} (subgrupo {sub_str}) em {slot} com {count} aulas")
 
     # H04: sala compatível com a disciplina
     for aula in horario.aulas:

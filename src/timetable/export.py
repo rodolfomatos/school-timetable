@@ -9,9 +9,8 @@ from __future__ import annotations
 import csv
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
 
-from .models import Aula, Horario, Slot
+from .models import Horario, Slot
 
 # Mapeamento de dias da semana para números (segunda=0)
 DIAS_SEMANA = {
@@ -44,9 +43,7 @@ def exportar_csv(horario: Horario, caminho: str | Path, semana_inicial: str = "2
 
     with open(caminho, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(
-            ["turma", "disciplina", "professor", "sala", "dia", "hora", "data"]
-        )
+        writer.writerow(["turma", "disciplina", "professor", "sala", "dia", "hora", "data"])
         for aula in sorted(
             horario.aulas,
             key=lambda a: (DIAS_SEMANA.get(a.slot.dia, 0), a.slot.hora, a.turma),
@@ -84,7 +81,7 @@ def exportar_ical(
     linhas.append("CALSCALE:GREGORIAN")
     linhas.append("METHOD:PUBLISH")
     linhas.append(f"X-WR-CALNAME:Horário — {nome_escola}")
-    linhas.append(f"X-WR-TIMEZONE:Europe/Lisbon")
+    linhas.append("X-WR-TIMEZONE:Europe/Lisbon")
     linhas.append("")
 
     for i, aula in enumerate(
@@ -102,7 +99,9 @@ def exportar_ical(
         linhas.append(f"DTSTART:{inicio.strftime('%Y%m%dT%H%M%S')}")
         linhas.append(f"DTEND:{fim.strftime('%Y%m%dT%H%M%S')}")
         linhas.append(f"SUMMARY:{aula.disciplina}")
-        linhas.append(f"DESCRIPTION:Professor: {aula.professor}\\nSala: {aula.sala}\\nTurma: {aula.turma}")
+        linhas.append(
+            f"DESCRIPTION:Professor: {aula.professor}\\nSala: {aula.sala}\\nTurma: {aula.turma}"
+        )
         linhas.append(f"LOCATION:{aula.sala}")
         linhas.append("END:VEVENT")
         linhas.append("")

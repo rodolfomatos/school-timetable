@@ -7,7 +7,7 @@ importantes são sempre satisfeitas, independentemente da entrada.
 from __future__ import annotations
 
 from hypothesis import given, strategies as st, settings
-from hypothesis.stateful import RuleBasedStateMachine, rule, invariant
+from hypothesis.stateful import RuleBasedStateMachine, rule
 
 from timetable.constraints import ContextoRestricoes, verificar_hard
 from timetable.models import (
@@ -27,6 +27,7 @@ from timetable.objective import avaliar
 # Estratégias de geração de dados
 # ---------------------------------------------------------------------------
 
+
 @st.composite
 def _slot_estrategia(draw):
     """Gera um Slot aleatório."""
@@ -41,7 +42,13 @@ def _professor_estrategia(draw):
     """Gera um Professor aleatório."""
 
     return Professor(
-        identificador=draw(st.text(min_size=1, max_size=5, alphabet=st.characters(whitelist_characters="abcdefghijklmnopqrstuvwxyz0123456789"))),
+        identificador=draw(
+            st.text(
+                min_size=1,
+                max_size=5,
+                alphabet=st.characters(whitelist_characters="abcdefghijklmnopqrstuvwxyz0123456789"),
+            )
+        ),
         nome=draw(st.text(min_size=1, max_size=20)),
         carga_maxima_semanal=draw(st.integers(min_value=10, max_value=30)),
         carga_minima_semanal=draw(st.integers(min_value=2, max_value=10)),
@@ -53,7 +60,13 @@ def _sala_estrategia(draw):
     """Gera uma Sala aleatória."""
 
     return Sala(
-        identificador=draw(st.text(min_size=1, max_size=5, alphabet=st.characters(whitelist_characters="abcdefghijklmnopqrstuvwxyz0123456789"))),
+        identificador=draw(
+            st.text(
+                min_size=1,
+                max_size=5,
+                alphabet=st.characters(whitelist_characters="abcdefghijklmnopqrstuvwxyz0123456789"),
+            )
+        ),
         capacidade=draw(st.integers(min_value=20, max_value=40)),
     )
 
@@ -63,7 +76,13 @@ def _turma_estrategia(draw):
     """Gera uma Turma aleatória."""
 
     return Turma(
-        identificador=draw(st.text(min_size=1, max_size=5, alphabet=st.characters(whitelist_characters="abcdefghijklmnopqrstuvwxyz0123456789"))),
+        identificador=draw(
+            st.text(
+                min_size=1,
+                max_size=5,
+                alphabet=st.characters(whitelist_characters="abcdefghijklmnopqrstuvwxyz0123456789"),
+            )
+        ),
         ano=draw(st.integers(min_value=7, max_value=12)),
         numero_alunos=draw(st.integers(min_value=20, max_value=35)),
     )
@@ -74,7 +93,13 @@ def _disciplina_estrategia(draw):
     """Gera uma Disciplina aleatória."""
 
     return Disciplina(
-        identificador=draw(st.text(min_size=1, max_size=5, alphabet=st.characters(whitelist_characters="abcdefghijklmnopqrstuvwxyz0123456789"))),
+        identificador=draw(
+            st.text(
+                min_size=1,
+                max_size=5,
+                alphabet=st.characters(whitelist_characters="abcdefghijklmnopqrstuvwxyz0123456789"),
+            )
+        ),
         nome=draw.st.text(min_size=1, max_size=20),
         carga_semanal=draw(st.integers(min_value=1, max_value=6)),
     )
@@ -122,9 +147,7 @@ def test_slots_imutaveis_sao_respeitados_por_mover(num_aulas, num_imutaveis):
             # Verifica que aulas em slots imutáveis não mudaram
             for a in resultado.aulas:
                 if horario.slot_e_imutavel(a.slot):
-                    assert a in horario.aulas, (
-                        f"Aula em slot imutável {a.slot} foi alterada: {a}"
-                    )
+                    assert a in horario.aulas, f"Aula em slot imutável {a.slot} foi alterada: {a}"
 
 
 @given(
