@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -12,6 +14,8 @@ from app.models.user import User, Role
 from app.models.schedule import Dispute, ScheduleAssignment
 from app.models.school import Teacher
 from app.schemas.schedule import DisputeCreate, DisputeRead, DisputeUpdate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/disputes", tags=["disputes"])
 
@@ -111,7 +115,7 @@ async def update_dispute(
     dispute_id: int,
     dispute_in: DisputeUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN)),
+    current_user: User = Depends(require_role(Role.ADMIN)),
 ):
     """Aceita ou rejeita uma contestação (apenas admin)."""
 
@@ -131,13 +135,13 @@ async def update_dispute(
 
     dispute.status = dispute_in.status
     dispute.resolved_at = datetime.now(timezone.utc)
-
-    # Obter o utilizador atual para registar quem resolveu
-    # (O utilizador já foi autenticado via require_role)
-
-    # Nota: o current_user já está disponível via dependency, mas precisamos do ID
-    # Para simplificar, vamos usar um placeholder - em produção, passar o user via dep
-    dispute.resolved_by = 1  # TODO: obter do current_user
+    dispute.resolved_by = current_user.id
+    logger.info(
+        "contestação resolvida id=%s status=%s resolved_by=%s",
+        dispute.id,
+        dispute.status,
+        current_user.id,
+    )
 
     await db.commit()
     await db.refresh(dispute)

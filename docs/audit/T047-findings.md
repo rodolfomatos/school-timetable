@@ -51,7 +51,8 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 **Evidência:** `backend/app/api/routers/auth.py`  
 **Descrição:** O endpoint de registo permite ao cliente especificar `role` diretamente. Um utilizador pode registar-se como `admin` ou `coordinator`.  
 **Impacto:** Escalada de privilégios — qualquer utilizador pode criar-se como admin ou coordinator.  
-**Condição de fechamento:** O registo público deve sempre atribuir `student`. A criação de outros papéis deve requerer autenticação de utilizador autorizado.
+**Condição de fechamento:** O registo público deve sempre atribuir `student`. A criação de outros papéis deve requerer autenticação de utilizador autorizado.  
+**Resolução (T050):** registo público força `student`; `PATCH /users/{id}` exige admin. Testes negativos: 6 failed antes → 9 passed depois. Ver `aes/tickets/T050-fase-3-autenticacao.md`.
 
 ### F-047.5: seed.py usa dados hard-coded
 **Severidade:** MAJOR  
@@ -200,7 +201,7 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 | F-047.1 | BLOCKER | T048 | Concluído (T048) |
 | F-047.2 | BLOCKER | T048 | Concluído (T048) |
 | F-047.3 | BLOCKER | T049 | Concluído (T049) |
-| F-047.4 | MAJOR | T050 | Pendente |
+| F-047.4 | MAJOR | T050 | Concluído (T050) |
 | F-047.5 | MAJOR | T052 | Pendente |
 | F-047.6 | MAJOR | T052 | Pendente |
 | F-047.7 | MAJOR | T053 | Pendente |

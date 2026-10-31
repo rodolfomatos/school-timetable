@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.deps import get_db
 from app.core.security import (
     hash_password,
@@ -21,23 +24,46 @@ from app.schemas.user import (
     LoginRequest,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 # Nome do cookie de acesso
 ACCESS_TOKEN_COOKIE = "access_token"
+REFRESH_TOKEN_COOKIE = "refresh_token"
+
+
+def _cookie_secure() -> bool:
+    """Cookies só exigem HTTPS em produção; em local/teste continuam testáveis."""
+
+    return settings.ENVIRONMENT == "production"
 
 
 def _set_access_token_cookie(response: Response, token: str) -> None:
-    """Define o cookie de acesso com HttpOnly, Secure e SameSite=Lax."""
+    """Define o cookie de acesso com HttpOnly, Secure (em produção) e SameSite=Lax."""
 
     response.set_cookie(
         key=ACCESS_TOKEN_COOKIE,
         value=token,
         httponly=True,
-        secure=False,  # True em produção com HTTPS
+        secure=_cookie_secure(),
         samesite="lax",
         path="/",
-        max_age=30 * 60,  # 30 minutos
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+
+
+def _set_refresh_token_cookie(response: Response, token: str) -> None:
+    """Define o cookie de refresh, restrito ao prefixo /auth."""
+
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE,
+        value=token,
+        httponly=True,
+        secure=_cookie_secure(),
+        samesite="lax",
+        path="/auth",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
     )
 
 
@@ -62,24 +88,26 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
             detail="Email já registado",
         )
 
-    # Apenas um admin pode criar outro admin
-    role = user_in.role
-    if role == Role.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Não é possível criar utilizadores com papel admin via registo público",
+    # O registo público nunca atribui privilégios. Papéis elevados só podem
+    # ser concedidos por um administrador autenticado (PATCH /users/{id}).
+    requested_role = user_in.role
+    if requested_role != Role.STUDENT:
+        logger.warning(
+            "registo público tentou papel elevado=%s; forçado para student",
+            requested_role,
         )
 
     new_user = User(
         email=user_in.email,
         hashed_password=hash_password(user_in.password),
         full_name=user_in.full_name,
-        role=role,
+        role=Role.STUDENT,
         institution_id=user_in.institution_id,
     )
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    logger.info("utilizador registado id=%s role=student", new_user.id)
     return new_user
 
 
@@ -94,18 +122,23 @@ async def login(
     result = await db.execute(select(User).where(User.email == login_in.email))
     user = result.scalar_one_or_none()
     if user is None or not verify_password(login_in.password, user.hashed_password):
+        logger.warning("tentativa de login falhada")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou palavra-passe incorretos",
         )
     if not user.is_active:
+        logger.warning("tentativa de login de utilizador desativado id=%s", user.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Utilizador desativado",
         )
 
     access_token = create_access_token({"sub": str(user.id), "role": user.role})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
     _set_access_token_cookie(response, access_token)
+    _set_refresh_token_cookie(response, refresh_token)
+    logger.info("login com sucesso id=%s", user.id)
 
     return UserRead(
         id=user.id,
@@ -160,15 +193,8 @@ async def refresh(
     new_refresh = create_refresh_token({"sub": str(user.id)})
 
     _set_access_token_cookie(response, access_token)
-    response.set_cookie(
-        key="refresh_token",
-        value=new_refresh,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        path="/auth",
-        max_age=7 * 24 * 60 * 60,  # 7 dias
-    )
+    _set_refresh_token_cookie(response, new_refresh)
+    logger.info("refresh de token id=%s", user.id)
 
     return UserRead(
         id=user.id,
@@ -186,5 +212,6 @@ async def logout(response: Response):
     """Limpa os cookies de autenticação."""
 
     _clear_access_token_cookie(response)
-    response.delete_cookie(key="refresh_token", path="/auth")
+    response.delete_cookie(key=REFRESH_TOKEN_COOKIE, path="/auth")
+    logger.info("logout efetuado")
     return None
