@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, TYPE_CHECKING
 from uuid import uuid4
 
 from sqlalchemy import (
-    Boolean,
     DateTime,
     ForeignKey,
     Integer,
@@ -15,9 +14,13 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSON, UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.school import Class, Disciplina, Professor, Sala
+    from app.models.user import Teacher, User
 
 IntPK = Annotated[int, mapped_column(Integer, primary_key=True, autoincrement=True)]
 UUIDPK = Annotated[
@@ -59,7 +62,7 @@ class ScheduleVersion(Base):
 
     # Relacionamentos
     assignments: Mapped[list["ScheduleAssignment"]] = relationship(
-        "ScheduleAssignment", back_populates="version", cascade="all, delete-orphan"
+        "ScheduleVersion", back_populates="assignments", cascade="all, delete-orphan"
     )
 
 
@@ -89,11 +92,11 @@ class ScheduleAssignment(Base):
     created_at: Mapped[CreatedAt]
 
     # Relacionamentos
-    version: Mapped["ScheduleVersion"] = relationship("ScheduleVersion", back_populates="assignments")
-    class_: Mapped["Class"] = relationship("Class", back_populates="assignments")
-    subject: Mapped["Subject"] = relationship("Subject", back_populates="assignments")
-    teacher: Mapped["Teacher"] = relationship("Teacher", back_populates="assignments")
-    room: Mapped["Room"] = relationship("Room", back_populates="assignments")
+    version: Mapped["ScheduleVersion"] = relationship(ScheduleVersion, back_populates="assignments")
+    class_: Mapped[Class] = relationship(Class, back_populates="assignments")
+    subject: Mapped[Disciplina] = relationship(Disciplina, back_populates="assignments")
+    teacher: Mapped[Professor] = relationship(Teacher, back_populates="assignments")
+    room: Mapped[Sala] = relationship(Sala, back_populates="assignments")
     disputes: Mapped[list["Dispute"]] = relationship(
         "Dispute", back_populates="assignment", cascade="all, delete-orphan"
     )
@@ -117,7 +120,7 @@ class Unavailability(Base):
     created_at: Mapped[CreatedAt]
 
     # Relacionamentos
-    teacher: Mapped["Teacher"] = relationship("Teacher", back_populates="unavailabilities")
+    teacher: Mapped[Teacher] = relationship(Teacher, back_populates="unavailabilities")
 
 
 class Dispute(Base):
@@ -147,8 +150,8 @@ class Dispute(Base):
     )
 
     # Relacionamentos
-    teacher: Mapped["Teacher"] = relationship("Teacher", back_populates="disputes")
-    assignment: Mapped["ScheduleAssignment"] = relationship(
-        "ScheduleAssignment", back_populates="disputes"
+    teacher: Mapped[Teacher] = relationship(Teacher, back_populates="disputes")
+    assignment: Mapped[ScheduleAssignment] = relationship(
+        ScheduleAssignment, back_populates="disputes"
     )
-    resolver: Mapped["User | None"] = relationship("User", foreign_keys=[resolved_by])
+    resolver: Mapped[User | None] = relationship(User, foreign_keys=[resolved_by])

@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import AsyncSessionLocal, Base
+from app.db.session import AsyncSessionLocal
 
 
 async def get_test_db() -> AsyncGenerator[AsyncSession, None]:

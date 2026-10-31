@@ -5,14 +5,12 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
-from jose import jwt
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.security import decode_token
 from app.db.session import AsyncSessionLocal
-from app.models.user import User
-from app.models.school import Role
+from app.models.user import User, Role
 
 
 async def get_db() -> AsyncSession:

@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
-import json
 import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
 
 from app.core.config import settings
-from app.models.schedule import ScheduleVersion, ScheduleAssignment
 from app.models.school import (
     Course,
     Room,
@@ -42,15 +38,12 @@ def _run_solver_sync(
             ContextoRestricoes,
         )
         from timetable.models import (
-            Aula,
             Horario,
             Professor,
             Sala,
             Slot,
             Turma,
             Disciplina,
-            RelacaoCasamento,
-            RelacaoFilho,
         )
         from timetable.local_search import simulated_annealing, tabu_search
         from timetable.cp_sat_baseline import CPSATSolver
@@ -79,7 +72,6 @@ def _run_solver_sync(
         # Construir contexto de restrições
         ctx_professores = {}
         for t in teachers:
-            user = next((u for u in users if u.id == t.user_id), None)
             disponibilidade = frozenset()
             if t.availability:
                 for dia, horas in t.availability.items():

@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from app.core.deps import get_db, get_current_user, require_role
 from app.models.user import User, Role
-from app.models.schedule import Dispute, ScheduleVersion, ScheduleAssignment
+from app.models.schedule import Dispute, ScheduleAssignment
 from app.models.school import Teacher
 from app.schemas.schedule import DisputeCreate, DisputeRead, DisputeUpdate
 
@@ -134,7 +134,6 @@ async def update_dispute(
 
     # Obter o utilizador atual para registar quem resolveu
     # (O utilizador já foi autenticado via require_role)
-    from app.core.deps import get_current_user
 
     # Nota: o current_user já está disponível via dependency, mas precisamos do ID
     # Para simplificar, vamos usar um placeholder - em produção, passar o user via dep

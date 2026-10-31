@@ -2,9 +2,9 @@
 
 import json
 import tempfile
+import pytest
 from pathlib import Path
 
-import pytest
 
 from timetable.constraints import ContextoRestricoes
 from timetable.models import (

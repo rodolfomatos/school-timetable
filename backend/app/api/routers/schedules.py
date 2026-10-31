@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.deps import get_db, get_current_user, require_role
-from app.main import limiter
+from app.core.limiter import limiter
 from app.models.user import User, Role
 from app.models.schedule import ScheduleVersion, ScheduleAssignment
 from app.services.solver_service import create_solver_task, get_solver_task

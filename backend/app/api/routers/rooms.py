@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.deps import get_db, get_current_user, require_role
-from app.models.school import Room, Role
+from app.models.school import Room
+from app.models.user import Role, User
 from app.schemas.school import RoomCreate, RoomRead, RoomUpdate
 
 router = APIRouter(prefix="/schools/rooms", tags=["schools"])

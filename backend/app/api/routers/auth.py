@@ -14,7 +14,6 @@ from app.core.security import (
     create_refresh_token,
     decode_token,
 )
-from app.db.session import AsyncSessionLocal
 from app.models.user import User, Role
 from app.schemas.user import (
     UserCreate,
