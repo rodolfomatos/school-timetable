@@ -58,7 +58,7 @@
 | T052 | Fase 3: Construção de solução inicial (Auditoria) | Concluído | Build | P0 |
 | T053 | Fase 4: Correção matemática do CP-SAT (Auditoria) | Concluído | Build | P0 |
 | T054 | Fase 4: Semântica dos subgrupos (Auditoria) | Concluído | Build | P0 |
-| T055 | Fase 5: Consistencia das restrições S01–S10 (Auditoria) | Pendente | Build | P1 |
+| T055 | Fase 5: Consistência das restrições S01–S10 (Auditoria) | Concluído | Build | P1 |
 | T056 | Fase 6: Cache e avaliação incremental (Auditoria) | Pendente | Build | P1 |
 | T057 | Fase 7: SolverResult e jobs persistentes (Auditoria) | Pendente | Build | P1 |
 | T058 | Fase 7: Multi-tenancy, migrações e produção (Auditoria) | Pendente | Build | P1 |
