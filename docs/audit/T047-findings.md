@@ -237,6 +237,7 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 | F-011 | MINOR | T017 | Concluído |
 | F-016 | MINOR | T034 | Concluído |
 | F-017 | MINOR | T035 | Concluído |
+| F-059 | MINOR | T059 | Concluído (T059) |
 
 ---
 
