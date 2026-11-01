@@ -54,14 +54,21 @@ class ScheduleVersion(Base):
     # Número de penalidades moles
     soft_penalties: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[CreatedAt]
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    updated_at: Mapped[UpdatedAt]
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     published_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    approved_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
 
     # Relacionamentos
     assignments: Mapped[list["ScheduleAssignment"]] = relationship(
         "ScheduleAssignment", back_populates="version", cascade="all, delete-orphan"
     )
+    creator: Mapped["User | None"] = relationship("User", foreign_keys=[created_by])
+    updater: Mapped["User | None"] = relationship("User", foreign_keys=[updated_by])
+    approver: Mapped["User | None"] = relationship("User", foreign_keys=[approved_by])
 
 
 class ScheduleAssignment(Base):
@@ -88,6 +95,9 @@ class ScheduleAssignment(Base):
     # Slot: {"dia": "segunda", "hora": 1}
     slot: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at: Mapped[CreatedAt]
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    updated_at: Mapped[UpdatedAt]
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
 
     # Relacionamentos
     version: Mapped["ScheduleVersion"] = relationship(ScheduleVersion, back_populates="assignments")
@@ -98,6 +108,8 @@ class ScheduleAssignment(Base):
     disputes: Mapped[list["Dispute"]] = relationship(
         "Dispute", back_populates="assignment", cascade="all, delete-orphan"
     )
+    creator: Mapped["User | None"] = relationship("User", foreign_keys=[created_by])
+    updater: Mapped["User | None"] = relationship("User", foreign_keys=[updated_by])
 
 
 class Unavailability(Base):
@@ -116,9 +128,14 @@ class Unavailability(Base):
     # Motivo livre (opcional)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[CreatedAt]
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    updated_at: Mapped[UpdatedAt]
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
 
     # Relacionamentos
     teacher: Mapped[Teacher] = relationship(Teacher, back_populates="unavailabilities")
+    creator: Mapped["User | None"] = relationship("User", foreign_keys=[created_by])
+    updater: Mapped["User | None"] = relationship("User", foreign_keys=[updated_by])
 
 
 class Dispute(Base):
@@ -140,6 +157,9 @@ class Dispute(Base):
     # Estado: pending, accepted, rejected
     status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
     created_at: Mapped[CreatedAt]
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    updated_at: Mapped[UpdatedAt]
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     resolved_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -153,6 +173,8 @@ class Dispute(Base):
         ScheduleAssignment, back_populates="disputes"
     )
     resolver: Mapped[User | None] = relationship(User, foreign_keys=[resolved_by])
+    creator: Mapped["User | None"] = relationship("User", foreign_keys=[created_by])
+    updater: Mapped["User | None"] = relationship("User", foreign_keys=[updated_by])
 
 
 class SolverJobStatus(str):
