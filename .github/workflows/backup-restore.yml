@@ -1,0 +1,193 @@
+name: Backup/Restore Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 0'  # Weekly on Sunday at 3 AM
+
+jobs:
+  backup-restore-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: school
+          POSTGRES_PASSWORD: school
+          POSTGRES_DB: school_timetable
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U school; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run migrations
+        run: |
+          cd backend
+          DATABASE_URL="postgresql+asyncpg://school:school@localhost:5432/school_timetable" \
+          alembic upgrade head
+
+      - name: Seed test data
+        run: |
+          cd backend
+          PYTHONPATH=. python3 -c "
+          import asyncio
+          from app.db.session import AsyncSessionLocal
+          from app.models.school import Course, Room, Subject, Class, Teacher, ClassSubject, TeacherSubject
+          from app.models.user import User, Role
+          from app.core.security import hash_password
+
+          async def seed():
+              async with AsyncSessionLocal() as db:
+                  # Create institution
+                  inst_id = 'ci-test-inst'
+                  
+                  # Create admin user
+                  admin = User(
+                      email='admin@test.com',
+                      hashed_password='\$2b\$12\$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.PZvO.S',
+                      full_name='Test Admin',
+                      role='admin',
+                      institution_id='ci-test'
+                  )
+                  
+                  # Create course
+                  course = Course(code='CS101', name='Computer Science 101', institution_id='ci-test')
+                  
+                  # Create room
+                  room = Room(name='Lab 1', capacity=30, room_type='laboratory', institution_id='ci-test')
+                  
+                  # Create subject
+                  subject = Subject(code='CS101', name='Intro to CS', weekly_load=4, institution_id='ci-test', course_id=1)
+                  
+                  # Create class
+                  class_ = Class(name='CS101-A', year=1, student_count=25, institution_id='ci-test', course_id=1)
+                  
+                  # Create teacher user
+                  teacher_user = User(
+                      email='teacher@test.com',
+                      hashed_password='\$2b\$12\$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.PZvO.S',
+                      full_name='Test Teacher',
+                      role='teacher',
+                      institution_id='ci-test'
+                  )
+                  
+                  # Create teacher profile
+                  teacher = Teacher(user_id=2, employee_code='T001', institution_id='ci-test')
+                  
+                  db.add_all([admin, course, room, subject, class_, teacher_user, teacher])
+                  await db.commit()
+                  
+                  # Create curriculum link
+                  class_subject = ClassSubject(class_id=1, subject_id=1, teacher_id=1, institution_id='ci-test')
+                  db.add(class_subject)
+                  
+                  # Create teacher qualification
+                  teacher_subject = TeacherSubject(teacher_id=1, subject_id=1, institution_id='ci-test')
+                  db.add(teacher_subject)
+                  
+                  await db.commit()
+                  print('Test data seeded successfully')
+
+          asyncio.run(seed())
+
+      - name: Run backup
+        run: |
+          chmod +x scripts/backup.sh
+          ./scripts/backup.sh /tmp/test_backup.dump
+
+      - name: Verify backup file exists
+        run: |
+          ls -la /tmp/test_backup.dump
+          file /tmp/test_backup.dump
+
+      - name: Create restore database
+        run: |
+          psql -h localhost -p 5432 -U school -d postgres -c "CREATE DATABASE school_timetable_restored;"
+
+      - name: Run restore
+        run: |
+          chmod +x scripts/restore.sh
+          ./scripts/restore.sh /tmp/test_backup.dump school_timetable_restored
+
+      - name: Verify restored data
+        run: |
+          cd backend
+          PYTHONPATH=. python3 -c "
+          import asyncio
+          from app.db.session import AsyncSessionLocal
+          from app.models.school import Course, Room, Subject, Class, Teacher
+          from app.models.user import User, Role
+          from sqlalchemy import select
+
+          async def verify():
+              async with AsyncSessionLocal() as db:
+                  # Check courses
+                  result = await db.execute(select(Course))
+                  courses = result.scalars().all()
+                  assert len(courses) == 1
+                  assert courses[0].code == 'CS101'
+                  
+                  # Check rooms
+                  result = await db.execute(select(Room))
+                  rooms = result.scalars().all()
+                  assert len(rooms) == 1
+                  assert rooms[0].name == 'Lab 1'
+                  
+                  # Check subjects
+                  result = await db.execute(select(Subject))
+                  subjects = result.scalars().all()
+                  assert len(subjects) == 1
+                  assert subjects[0].code == 'CS101'
+                  
+                  # Check classes
+                  result = await db.execute(select(Class))
+                  classes = result.scalars().all()
+                  assert len(classes) == 1
+                  assert classes[0].name == 'CS101-A'
+                  
+                  # Check users
+                  result = await db.execute(select(User))
+                  users = result.scalars().all()
+                  assert len(users) == 2  # admin + teacher
+                  
+                  # Check teachers
+                  result = await db.execute(select(Teacher))
+                  teachers = result.scalars().all()
+                  assert len(teachers) == 1
+                  
+                  print('✅ All data verified successfully')
+
+          asyncio.run(verify())
+          "
+
+      - name: Cleanup
+        run: |
+          psql -h localhost -p 5432 -U school -d postgres -c "DROP DATABASE IF EXISTS school_timetable_restored;"
+          rm -f /tmp/test_backup.dump
