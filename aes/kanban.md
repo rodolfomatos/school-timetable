@@ -57,7 +57,7 @@
 | T051 | Fase 3: Modelo de domínio e integração (Auditoria) | Concluído | Build | P0 |
 | T052 | Fase 3: Construção de solução inicial (Auditoria) | Concluído | Build | P0 |
 | T053 | Fase 4: Correção matemática do CP-SAT (Auditoria) | Concluído | Build | P0 |
-| T054 | Fase 4: Semântica dos subgrupos (Auditoria) | Pendente | Build | P0 |
+| T054 | Fase 4: Semântica dos subgrupos (Auditoria) | Concluído | Build | P0 |
 | T055 | Fase 5: Consistencia das restrições S01–S10 (Auditoria) | Pendente | Build | P1 |
 | T056 | Fase 6: Cache e avaliação incremental (Auditoria) | Pendente | Build | P1 |
 | T057 | Fase 7: SolverResult e jobs persistentes (Auditoria) | Pendente | Build | P1 |

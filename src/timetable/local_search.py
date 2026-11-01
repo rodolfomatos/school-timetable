@@ -56,9 +56,9 @@ def _gerar_vizinho_exchange(
     a1, a2 = rng.sample(aulas_mutaveis, 2)
     slot1, slot2 = a1.slot, a2.slot
 
-    # Troca os slots
-    nova_a1 = Aula(a1.turma, a1.disciplina, a1.professor, a1.sala, slot2)
-    nova_a2 = Aula(a2.turma, a2.disciplina, a2.professor, a2.sala, slot1)
+    # Troca os slots (preserva subgrupo_id)
+    nova_a1 = Aula(a1.turma, a1.disciplina, a1.professor, a1.sala, slot2, subgrupo_id=a1.subgrupo_id)
+    nova_a2 = Aula(a2.turma, a2.disciplina, a2.professor, a2.sala, slot1, subgrupo_id=a2.subgrupo_id)
 
     vizinho.remover(a1)
     vizinho.remover(a2)
@@ -97,6 +97,7 @@ def _gerar_vizinho_modify(
         professor=aula.professor,
         sala=aula.sala,
         slot=novo_slot,
+        subgrupo_id=aula.subgrupo_id,
     )
     vizinho.remover(aula)
     vizinho.adicionar(nova_aula)

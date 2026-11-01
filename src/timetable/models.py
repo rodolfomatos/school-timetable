@@ -185,12 +185,22 @@ class Horario:
     def turma_ocupada_em(self, turma: str, slot: Slot, subgrupo_id: Optional[str] = None) -> bool:
         """Verifica se uma turma (ou subgrupo específico) está ocupada em um slot.
 
-        Se subgrupo_id for fornecido, verifica apenas esse subgrupo.
-        Duas aulas da mesma turma podem ocorrer no mesmo slot se forem de subgrupos diferentes.
+        Se subgrupo_id for fornecido, verifica esse subgrupo E a turma inteira
+        (subgrupo_id=None), pois a turma inteira não pode sobrepor-se a subgrupos.
+        Se subgrupo_id=None (turma inteira), verifica todos os subgrupos dessa turma.
         """
-        return any(
-            a.turma == turma and a.subgrupo_id == subgrupo_id and a.slot == slot for a in self.aulas
-        )
+        if subgrupo_id is not None:
+            # Verifica o subgrupo específico E a turma inteira
+            return any(
+                a.turma == turma and (a.subgrupo_id == subgrupo_id or a.subgrupo_id is None) and a.slot == slot
+                for a in self.aulas
+            )
+        else:
+            # Turma inteira: verifica todos os subgrupos dessa turma
+            return any(
+                a.turma == turma and a.slot == slot
+                for a in self.aulas
+            )
 
     def aulas_do_professor(self, professor: str) -> list[Aula]:
         return [a for a in self.aulas if a.professor == professor]

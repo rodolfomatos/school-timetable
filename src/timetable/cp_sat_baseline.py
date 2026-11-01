@@ -243,11 +243,18 @@ class CPSATSolver:
                 )
 
         # --- H03: turma+subgrupo não tem duas aulas no mesmo slot ---
-        # Duas aulas da mesma turma podem ocorrer no mesmo slot se forem de subgrupos diferentes
+        # Duas aulas da mesma turma podem ocorrer no mesmo slot se forem de subgrupos DIFERENTES.
+        # Mas a turma inteira (subgrupo_id=None) não pode sobrepor-se a NENHUM subgrupo.
         for turma_id in turmas:
-            sub_ids_turma = turma_subgrupos.get(turma_id, [None])
+            sub_ids_turma = turma_subgrupos.get(turma_id, [])
+            # Se a turma tem subgrupos, a turma inteira (None) também é um "subgrupo" para efeitos de H03
+            if sub_ids_turma:
+                sub_ids_turma = sub_ids_turma + [None]
+            else:
+                sub_ids_turma = [None]
             for slot in slots:
                 for sub_id in sub_ids_turma:
+                    # Para cada subgrupo (incluindo None), verifica não há mais de 1 aula
                     model.Add(
                         sum(
                             vars_x[(lid, p, s, sl, s_id)]
@@ -258,6 +265,21 @@ class CPSATSolver:
                         )
                         <= 1
                     )
+                # Adicional: se a turma tem subgrupos, a turma inteira não pode sobrepor-se a subgrupos
+                if sub_ids_turma != [None]:
+                    # Soma de aulas da turma inteira + cada subgrupo não pode exceder 1
+                    for sub_id in sub_ids_turma:
+                        if sub_id is not None:
+                            model.Add(
+                                sum(
+                                    vars_x[(lid, p, s, sl, s_id)]
+                                    for (lid, p, s, sl, s_id), v in vars_x.items()
+                                    if sessao_turma.get(lid) == turma_id
+                                    and sl == slot
+                                    and s_id in (None, sub_id)
+                                )
+                                <= 1
+                            )
 
         # --- H04: sala compatível com a disciplina ---
         for (lid, p, s, sl, sub_id), v in vars_x.items():
