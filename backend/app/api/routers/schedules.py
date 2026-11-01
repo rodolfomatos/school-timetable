@@ -27,6 +27,11 @@ from app.schemas.schedule import (
 router = APIRouter(prefix="/scheduler", tags=["scheduler"])
 
 
+def _get_institution_id(current_user: User) -> str | None:
+    """Extrai institution_id do utilizador atual."""
+    return current_user.institution_id
+
+
 @router.post("/run", response_model=SolverRunResponse)
 @limiter.limit("5/minute")
 async def run_solver(
@@ -37,8 +42,15 @@ async def run_solver(
 ):
     """Executa o solver de horário de forma assíncrona (rate limited: 5/min)."""
 
+    institution_id = solver_request.institution_id or _get_institution_id(current_user)
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="institution_id é obrigatório (no pedido ou no utilizador)",
+        )
+
     job_id = await create_solver_job(
-        institution_id=solver_request.institution_id,
+        institution_id=institution_id,
         solver=solver_request.solver,
         time_limit_seconds=solver_request.time_limit_seconds,
         additional_unavailabilities=solver_request.additional_unavailabilities,
@@ -66,6 +78,14 @@ async def solver_status(
             detail="Job não encontrado",
         )
 
+    # Verificar isolamento institucional
+    user_inst = _get_institution_id(current_user)
+    if user_inst and job.institution_id != user_inst:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado: job pertence a outra instituição",
+        )
+
     return SolverStatusResponse(
         task_id=job.id,
         status=job.status,
@@ -79,16 +99,23 @@ async def solver_status(
 
 @router.get("/jobs", response_model=list[SolverStatusResponse])
 async def list_jobs(
-    status: str | None = None,
+    status_filter: str | None = None,
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(get_current_user),
 ):
-    """Lista jobs de solver com filtros opcionais."""
+    """Lista jobs de solver com filtros opcionais e isolamento institucional."""
+
+    institution_id = _get_institution_id(current_user)
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
 
     jobs = await list_solver_jobs(
-        institution_id=None,  # TODO: filtrar por institution_id do utilizador
-        status=status,
+        institution_id=institution_id,
+        status=status_filter,
         limit=limit,
         offset=offset,
     )
@@ -112,7 +139,21 @@ async def cancel_job(
     job_id: str,
     current_user: User = Depends(require_role(Role.ADMIN)),
 ):
-    """Cancela um job pendente ou em execução."""
+    """Cancela um job pendente ou em execução (apenas admin da mesma instituição)."""
+
+    job = await get_solver_job(job_id)
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job não encontrado",
+        )
+
+    user_inst = _get_institution_id(current_user)
+    if user_inst and job.institution_id != user_inst:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado: job pertence a outra instituição",
+        )
 
     success = await cancel_solver_job(job_id, cancelled_by=current_user.id)
     if not success:
@@ -125,11 +166,20 @@ async def cancel_job(
 @router.get("/versions", response_model=list[ScheduleVersionRead])
 async def list_versions(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    """Lista versões de horário."""
+    """Lista versões de horário da instituição do utilizador."""
 
-    result = await db.execute(select(ScheduleVersion))
+    institution_id = _get_institution_id(current_user)
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(
+        select(ScheduleVersion).where(ScheduleVersion.institution_id == institution_id)
+    )
     return result.scalars().all()
 
 
@@ -137,9 +187,30 @@ async def list_versions(
 async def get_assignments(
     version_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    """Lista atribuições de uma versão de horário."""
+    """Lista atribuições de uma versão de horário (com verificação de instituição)."""
+
+    institution_id = _get_institution_id(current_user)
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    # Verificar que a versão pertence à instituição
+    version_result = await db.execute(
+        select(ScheduleVersion).where(
+            ScheduleVersion.id == version_id,
+            ScheduleVersion.institution_id == institution_id,
+        )
+    )
+    version = version_result.scalar_one_or_none()
+    if not version:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Versão não encontrada ou acesso negado",
+        )
 
     result = await db.execute(
         select(ScheduleAssignment).where(ScheduleAssignment.version_id == version_id)

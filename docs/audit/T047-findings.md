@@ -227,9 +227,9 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 | F-012 | P1 | T053 | Concluído (T053) |
 | F-015 | P1 | T051 | Concluído (T051) |
 | F-016 | P1 | T052 | Concluído (T052) |
-| F-017 | P1 | T058 | Pendente |
-| F-019 | P2 | T058 | Pendente |
-| F-020 | P3 | T058 | Pendente |
+| F-017 | P1 | T058 | Concluído (T058 - migrações, validação produção) |
+| F-019 | P2 | T058 | Parcial (T058 - isolamento scheduler; routers restantes pendentes migração schema) |
+| F-020 | P3 | T058 | Parcial (T058 - campos auditoria em SolverJob; ScheduleVersion/Assignment pendentes) |
 | F-007 | MINOR | T017 | Concluído |
 | F-008 | MINOR | T017 | Concluído |
 | F-009 | MINOR | T017 | Concluído |

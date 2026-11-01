@@ -2,19 +2,30 @@
 
 from __future__ import annotations
 
+import os
+
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import declarative_base
 
-from app.core.config import settings
+from app.db.base import Base
 
-engine = create_async_engine(settings.DATABASE_URL, echo=False, future=True)
+# Use settings for DATABASE_URL but ensure async driver for SQLite
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+asyncpg://school:school@localhost:5432/school_timetable",
+)
+
+# Ensure async driver for SQLite
+if "sqlite://" in DATABASE_URL and "aiosqlite" not in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://")
+
+engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 
 AsyncSessionLocal = async_sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False
 )
 
-Base = declarative_base()
+__all__ = ["engine", "AsyncSessionLocal", "Base"]

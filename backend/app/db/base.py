@@ -1,5 +1,12 @@
 """Base declarativa dos modelos SQLAlchemy."""
 
-from app.db.session import Base
+from __future__ import annotations
+
+from sqlalchemy.orm import DeclarativeBase
+
+
+class Base(DeclarativeBase):
+    pass
+
 
 __all__ = ["Base"]
