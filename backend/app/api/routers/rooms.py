@@ -14,15 +14,27 @@ from app.schemas.school import RoomCreate, RoomRead, RoomUpdate
 router = APIRouter(prefix="/schools/rooms", tags=["schools"])
 
 
+def _get_institution_id(current_user: User) -> str | None:
+    """Extrai institution_id do utilizador atual."""
+    return current_user.institution_id
+
+
 @router.post("/", response_model=RoomRead, status_code=status.HTTP_201_CREATED)
 async def create_room(
     room_in: RoomCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
 ):
     """Cria uma nova sala."""
 
-    room = Room(**room_in.model_dump())
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    room = Room(**room_in.model_dump(), institution_id=institution_id)
     db.add(room)
     await db.commit()
     await db.refresh(room)
@@ -32,11 +44,18 @@ async def create_room(
 @router.get("/", response_model=list[RoomRead])
 async def list_rooms(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    """Lista todas as salas."""
+    """Lista salas da instituição do utilizador."""
 
-    result = await db.execute(select(Room))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Room).where(Room.institution_id == institution_id))
     return result.scalars().all()
 
 
@@ -44,11 +63,18 @@ async def list_rooms(
 async def get_room(
     room_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Obtém uma sala pelo ID."""
 
-    result = await db.execute(select(Room).where(Room.id == room_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Room).where(Room.id == room_id, Room.institution_id == institution_id))
     room = result.scalar_one_or_none()
     if room is None:
         raise HTTPException(
@@ -63,11 +89,18 @@ async def update_room(
     room_id: int,
     room_in: RoomUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
 ):
     """Atualiza uma sala."""
 
-    result = await db.execute(select(Room).where(Room.id == room_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Room).where(Room.id == room_id, Room.institution_id == institution_id))
     room = result.scalar_one_or_none()
     if room is None:
         raise HTTPException(
@@ -88,11 +121,18 @@ async def update_room(
 async def delete_room(
     room_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN)),
+    current_user: User = Depends(require_role(Role.ADMIN)),
 ):
     """Remove uma sala."""
 
-    result = await db.execute(select(Room).where(Room.id == room_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Room).where(Room.id == room_id, Room.institution_id == institution_id))
     room = result.scalar_one_or_none()
     if room is None:
         raise HTTPException(

@@ -11,13 +11,18 @@ from datetime import datetime, timezone
 
 from app.core.deps import get_db, get_current_user, require_role
 from app.models.user import User, Role
-from app.models.schedule import Dispute, ScheduleAssignment
+from app.models.schedule import Dispute, ScheduleAssignment, ScheduleVersion
 from app.models.school import Teacher
 from app.schemas.schedule import DisputeCreate, DisputeRead, DisputeUpdate
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/disputes", tags=["disputes"])
+
+
+def _get_institution_id(current_user: User) -> str | None:
+    """Extrai institution_id do utilizador atual."""
+    return current_user.institution_id
 
 
 @router.post("/", response_model=DisputeRead, status_code=status.HTTP_201_CREATED)
@@ -90,7 +95,7 @@ async def list_disputes(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Lista contestações (docente vê as suas, admin vê todas)."""
+    """Lista contestações (docente vê as suas, admin vê da sua instituição)."""
 
     # Obter o professor do utilizador se for docente
     result = await db.execute(
@@ -98,8 +103,21 @@ async def list_disputes(
     )
     teacher = result.scalar_one_or_none()
 
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
     if current_user.role == Role.ADMIN:
-        result = await db.execute(select(Dispute))
+        # Admin vê contestações da sua instituição
+        result = await db.execute(
+            select(Dispute)
+            .join(ScheduleAssignment, Dispute.assignment_id == ScheduleAssignment.id)
+            .join(ScheduleVersion, ScheduleAssignment.version_id == ScheduleVersion.id)
+            .where(ScheduleVersion.institution_id == institution_id)
+        )
     elif teacher is not None:
         result = await db.execute(
             select(Dispute).where(Dispute.teacher_id == teacher.id)
@@ -117,14 +135,26 @@ async def update_dispute(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(Role.ADMIN)),
 ):
-    """Aceita ou rejeita uma contestação (apenas admin)."""
+    """Aceita ou rejeita uma contestação (apenas admin da mesma instituição)."""
 
-    result = await db.execute(select(Dispute).where(Dispute.id == dispute_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(
+        select(Dispute)
+        .join(ScheduleAssignment, Dispute.assignment_id == ScheduleAssignment.id)
+        .join(ScheduleVersion, ScheduleAssignment.version_id == ScheduleVersion.id)
+        .where(Dispute.id == dispute_id, ScheduleVersion.institution_id == institution_id)
+    )
     dispute = result.scalar_one_or_none()
     if dispute is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contestação não encontrada",
+            detail="Contestação não encontrada ou acesso negado",
         )
 
     if dispute.status != "pending":

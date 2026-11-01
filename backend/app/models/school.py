@@ -37,10 +37,14 @@ class Course(Base):
     """Curso / departamento da instituição."""
 
     __tablename__ = "courses"
+    __table_args__ = (
+        UniqueConstraint("code", "institution_id", name="uq_courses_code_institution"),
+    )
 
     id: Mapped[IntPK]
-    code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    institution_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     created_at: Mapped[CreatedAt]
 
     # Relacionamentos
@@ -69,6 +73,7 @@ class Room(Base):
     course_id: Mapped[int | None] = mapped_column(
         ForeignKey("courses.id"), nullable=True, index=True
     )
+    institution_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[CreatedAt]
 
@@ -83,9 +88,12 @@ class Subject(Base):
     """Disciplina / matéria."""
 
     __tablename__ = "subjects"
+    __table_args__ = (
+        UniqueConstraint("code", "institution_id", name="uq_subjects_code_institution"),
+    )
 
     id: Mapped[IntPK]
-    code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     weekly_load: Mapped[int] = mapped_column(Integer, nullable=False)
     # Tipo de sala requerida (normal, laboratorio, anatomia)
@@ -95,6 +103,7 @@ class Subject(Base):
     # Semanas em que a disciplina ocorre (JSON array de números de semana)
     weeks_active: Mapped[list[int] | None] = mapped_column(JSON, nullable=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), nullable=False, index=True)
+    institution_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[CreatedAt]
 
@@ -123,6 +132,7 @@ class Class(Base):
     student_count: Mapped[int] = mapped_column(Integer, nullable=False)
     # Semanas em que a turma está ativa (JSON array)
     weeks_active: Mapped[list[int] | None] = mapped_column(JSON, nullable=True)
+    institution_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[CreatedAt]
 
@@ -156,6 +166,7 @@ class Teacher(Base):
     commute_time: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     # Disponibilidade por slot (JSON: {"segunda": [1,2,3], "terca": [...]})
     availability: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    institution_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[CreatedAt]
 
@@ -187,7 +198,7 @@ class ClassSubject(Base):
 
     __tablename__ = "class_subjects"
     __table_args__ = (
-        UniqueConstraint("class_id", "subject_id", name="uq_class_subject"),
+        UniqueConstraint("class_id", "subject_id", "institution_id", name="uq_class_subject_institution"),
     )
 
     id: Mapped[IntPK]
@@ -200,6 +211,7 @@ class ClassSubject(Base):
     teacher_id: Mapped[int | None] = mapped_column(
         ForeignKey("teachers.id"), nullable=True, index=True
     )
+    institution_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     created_at: Mapped[CreatedAt]
 
     # Relacionamentos
@@ -215,7 +227,7 @@ class TeacherSubject(Base):
 
     __tablename__ = "teacher_subjects"
     __table_args__ = (
-        UniqueConstraint("teacher_id", "subject_id", name="uq_teacher_subject"),
+        UniqueConstraint("teacher_id", "subject_id", "institution_id", name="uq_teacher_subject_institution"),
     )
 
     id: Mapped[IntPK]
@@ -225,6 +237,7 @@ class TeacherSubject(Base):
     subject_id: Mapped[int] = mapped_column(
         ForeignKey("subjects.id"), nullable=False, index=True
     )
+    institution_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     created_at: Mapped[CreatedAt]
 
     # Relacionamentos

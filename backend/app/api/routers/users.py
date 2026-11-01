@@ -1,4 +1,4 @@
-"""Router de utiladores: listar (admin), obter perfil (me), atualizar."""
+"""Router de utilizadores: listar (admin), obter perfil (me), atualizar."""
 
 from __future__ import annotations
 
@@ -13,6 +13,11 @@ from app.schemas.user import UserRead, UserUpdate
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+def _get_institution_id(current_user: User) -> str | None:
+    """Extrai institution_id do utilizador atual."""
+    return current_user.institution_id
+
+
 @router.get("/me", response_model=UserRead)
 async def read_me(current_user: User = Depends(get_current_user)):
     """Devolve o perfil do utilizador autenticado."""
@@ -23,11 +28,18 @@ async def read_me(current_user: User = Depends(get_current_user)):
 @router.get("/", response_model=list[UserRead])
 async def list_users(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN)),
+    current_user: User = Depends(require_role(Role.ADMIN)),
 ):
-    """Lista todos os utilizadores (apenas admin)."""
+    """Lista todos os utilizadores da instituição do admin (apenas admin)."""
 
-    result = await db.execute(select(User))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(User).where(User.institution_id == institution_id))
     return result.scalars().all()
 
 
@@ -36,11 +48,18 @@ async def update_user(
     user_id: int,
     user_in: UserUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN)),
+    current_user: User = Depends(require_role(Role.ADMIN)),
 ):
-    """Atualiza um utilizador (apenas admin)."""
+    """Atualiza um utilizador (apenas admin da mesma instituição)."""
 
-    result = await db.execute(select(User).where(User.id == user_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id, User.institution_id == institution_id))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(

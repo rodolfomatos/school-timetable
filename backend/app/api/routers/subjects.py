@@ -14,15 +14,27 @@ from app.schemas.school import SubjectCreate, SubjectRead, SubjectUpdate
 router = APIRouter(prefix="/schools/subjects", tags=["schools"])
 
 
+def _get_institution_id(current_user: User) -> str | None:
+    """Extrai institution_id do utilizador atual."""
+    return current_user.institution_id
+
+
 @router.post("/", response_model=SubjectRead, status_code=status.HTTP_201_CREATED)
 async def create_subject(
     subject_in: SubjectCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
 ):
     """Cria uma nova disciplina."""
 
-    subject = Subject(**subject_in.model_dump())
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    subject = Subject(**subject_in.model_dump(), institution_id=institution_id)
     db.add(subject)
     await db.commit()
     await db.refresh(subject)
@@ -32,11 +44,18 @@ async def create_subject(
 @router.get("/", response_model=list[SubjectRead])
 async def list_subjects(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    """Lista todas as disciplinas."""
+    """Lista disciplinas da instituição do utilizador."""
 
-    result = await db.execute(select(Subject))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Subject).where(Subject.institution_id == institution_id))
     return result.scalars().all()
 
 
@@ -44,11 +63,18 @@ async def list_subjects(
 async def get_subject(
     subject_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Obtém uma disciplina pelo ID."""
 
-    result = await db.execute(select(Subject).where(Subject.id == subject_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Subject).where(Subject.id == subject_id, Subject.institution_id == institution_id))
     subject = result.scalar_one_or_none()
     if subject is None:
         raise HTTPException(
@@ -63,11 +89,18 @@ async def update_subject(
     subject_id: int,
     subject_in: SubjectUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
 ):
     """Atualiza uma disciplina."""
 
-    result = await db.execute(select(Subject).where(Subject.id == subject_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Subject).where(Subject.id == subject_id, Subject.institution_id == institution_id))
     subject = result.scalar_one_or_none()
     if subject is None:
         raise HTTPException(
@@ -88,11 +121,18 @@ async def update_subject(
 async def delete_subject(
     subject_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN)),
+    current_user: User = Depends(require_role(Role.ADMIN)),
 ):
     """Remove uma disciplina."""
 
-    result = await db.execute(select(Subject).where(Subject.id == subject_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Subject).where(Subject.id == subject_id, Subject.institution_id == institution_id))
     subject = result.scalar_one_or_none()
     if subject is None:
         raise HTTPException(

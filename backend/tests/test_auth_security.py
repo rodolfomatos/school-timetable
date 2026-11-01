@@ -56,6 +56,7 @@ async def _create_user(
     email: str,
     role: str,
     password: str = "segredo123",
+    institution_id: str = "test-inst",
 ) -> User:
     async with factory() as session:
         user = User(
@@ -63,6 +64,7 @@ async def _create_user(
             hashed_password=hash_password(password),
             full_name="Utilizador Sintético",
             role=role,
+            institution_id=institution_id,
         )
         session.add(user)
         await session.commit()
@@ -196,12 +198,12 @@ async def _seed_dispute(
     """Cria um horário mínimo com uma contestação pendente."""
 
     async with factory() as session:
-        course = Course(code="MED", name="Medicina")
-        room = Room(name="Sala M1", capacity=20, course=course)
-        subject = Subject(code="BIO", name="Biologia", weekly_load=2, course=course)
-        school_class = Class(name="Turma M1", year=1, student_count=20, course=course)
-        teacher = Teacher(user_id=teacher_user_id, employee_code="DOC-MED")
-        version = ScheduleVersion(status="published")
+        course = Course(code="MED", name="Medicina", institution_id="test-inst")
+        room = Room(name="Sala M1", capacity=20, course=course, institution_id="test-inst")
+        subject = Subject(code="BIO", name="Biologia", weekly_load=2, course=course, institution_id="test-inst")
+        school_class = Class(name="Turma M1", year=1, student_count=20, course=course, institution_id="test-inst")
+        teacher = Teacher(user_id=teacher_user_id, employee_code="DOC-MED", institution_id="test-inst")
+        version = ScheduleVersion(status="published", institution_id="test-inst")
         session.add_all([course, room, subject, school_class, teacher, version])
         await session.flush()
 

@@ -14,15 +14,27 @@ from app.schemas.school import CourseCreate, CourseRead, CourseUpdate
 router = APIRouter(prefix="/schools/courses", tags=["schools"])
 
 
+def _get_institution_id(current_user: User) -> str | None:
+    """Extrai institution_id do utilizador atual."""
+    return current_user.institution_id
+
+
 @router.post("/", response_model=CourseRead, status_code=status.HTTP_201_CREATED)
 async def create_course(
     course_in: CourseCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
 ):
     """Cria um novo curso."""
 
-    course = Course(**course_in.model_dump())
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    course = Course(**course_in.model_dump(), institution_id=institution_id)
     db.add(course)
     await db.commit()
     await db.refresh(course)
@@ -32,11 +44,18 @@ async def create_course(
 @router.get("/", response_model=list[CourseRead])
 async def list_courses(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    """Lista todos os cursos."""
+    """Lista todos os cursos da instituição do utilizador."""
 
-    result = await db.execute(select(Course))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Course).where(Course.institution_id == institution_id))
     return result.scalars().all()
 
 
@@ -44,11 +63,18 @@ async def list_courses(
 async def get_course(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Obtém um curso pelo ID."""
 
-    result = await db.execute(select(Course).where(Course.id == course_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Course).where(Course.id == course_id, Course.institution_id == institution_id))
     course = result.scalar_one_or_none()
     if course is None:
         raise HTTPException(
@@ -63,11 +89,18 @@ async def update_course(
     course_id: int,
     course_in: CourseUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.COORDINATOR)),
 ):
     """Atualiza um curso."""
 
-    result = await db.execute(select(Course).where(Course.id == course_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Course).where(Course.id == course_id, Course.institution_id == institution_id))
     course = result.scalar_one_or_none()
     if course is None:
         raise HTTPException(
@@ -88,11 +121,18 @@ async def update_course(
 async def delete_course(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN)),
+    current_user: User = Depends(require_role(Role.ADMIN)),
 ):
     """Remove um curso."""
 
-    result = await db.execute(select(Course).where(Course.id == course_id))
+    institution_id = current_user.institution_id
+    if not institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Utilizador sem institution_id",
+        )
+
+    result = await db.execute(select(Course).where(Course.id == course_id, Course.institution_id == institution_id))
     course = result.scalar_one_or_none()
     if course is None:
         raise HTTPException(
