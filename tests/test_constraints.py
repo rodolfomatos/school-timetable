@@ -170,12 +170,13 @@ def test_s04_aulas_espalhadas_sem_penalidade():
 
 
 def test_s05_padrao_interrompido():
-    """S05: mesma disciplina interrompida por outra no mesmo dia."""
+    """S05: padrão A-B-C-A (mesma disciplina interrompida por duas outras)."""
 
     ctx = _ctx_padrao()
     ctx.disciplinas["p1"] = Disciplina(identificador="p1", nome="Português", carga_semanal=1)
+    ctx.disciplinas["i1"] = Disciplina(identificador="i1", nome="Inglês", carga_semanal=1)
     h = Horario()
-    # Segunda-feira: Matemática (1h), Português (2h), Matemática (3h) → padrão A-B-A
+    # Segunda-feira: Matemática (1h), Português (2h), Inglês (3h), Matemática (4h) → padrão A-B-C-A
     h.adicionar(
         Aula(
             turma="t1", disciplina="m1", professor="p1", sala="s1", slot=Slot(dia="segunda", hora=1)
@@ -188,7 +189,12 @@ def test_s05_padrao_interrompido():
     )
     h.adicionar(
         Aula(
-            turma="t1", disciplina="m1", professor="p1", sala="s1", slot=Slot(dia="segunda", hora=3)
+            turma="t1", disciplina="i1", professor="p3", sala="s3", slot=Slot(dia="segunda", hora=3)
+        )
+    )
+    h.adicionar(
+        Aula(
+            turma="t1", disciplina="m1", professor="p1", sala="s1", slot=Slot(dia="segunda", hora=4)
         )
     )
     penalidades = calcular_penalidades_moles(h, ctx)

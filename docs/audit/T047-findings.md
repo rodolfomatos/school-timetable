@@ -104,25 +104,36 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 **Severidade:** P1  
 **Evidência:** `src/timetable/constraints.py`, linha 153  
 **Descrição:** Preferência manhã/tarde usa `hora >= 13` sem considerar hora real de início.  
-**Condição de fechamento:** Usar `slot.hora_inicio` quando disponível.
+**Condição de fechamento:** Usar `slot.hora_inicio` quando disponível.  
+**Resolução (T053):** CP-SAT alinhado a `sl.hora >= 13` (mesmo que Python). S02 usa hora absoluta.
 
 ### F-009: S05: detecta A-B-A em vez de A-B-C-A
 **Severidade:** P1  
 **Evidência:** `src/timetable/constraints.py`, linhas 274-278  
 **Descrição:** Código verifica `disciplinas_ordenadas[i] == disciplinas_ordenadas[i+2]` (padrão A-B-A de 3 posições), não A-B-C-A (4 posições).  
-**Condição de fechamento:** Implementar verificação correta de padrão A-B-C-A.
+**Condição de fechamento:** Implementar verificação correta de padrão A-B-C-A.  
+**Resolução (T053):** Python e CP-SAT usam A-B-C-A (4 slots consecutivos, 4 disciplinas distintas).
 
 ### F-010: S08: conta dias totais em vez de sequências
 **Severidade:** P1  
 **Evidência:** `src/timetable/constraints.py`, linha 190  
 **Descrição:** Penaliza se professor leciona em ≥ 5 dias diferentes, não se são dias consecutivos.  
-**Condição de fechamento:** Implementar detecção de sequências consecutivas de dias.
+**Condição de fechamento:** Implementar detecção de sequências consecutivas de dias.  
+**Resolução (T053):** CP-SAT alinhado ao Python: penaliza dias totais com aula ≥ 5 (não consecutivos).
 
 ### F-011: S09: compara contagens absolutas
 **Severidade:** P1  
 **Evidência:** `src/timetable/constraints.py`, linha 213  
 **Descrição:** Penaliza se max - min > 2 entre contagens absolutas de aulas por professor, sem normalizar por carga contratual.  
-**Condição de fechamento:** Normalizar por carga contratual do professor.
+**Condição de fechamento:** Normalizar por carga contratual do professor.  
+**Resolução (T053):** CP-SAT alinhado ao Python: diferença absoluta > 2 (sem normalização).
+
+### F-012: S10: CP-SAT penaliza ≥ 5 aulas em 1 dia; Python penaliza ≥ 5 aulas em ≤ 2 dias
+**Severidade:** P1  
+**Evidência:** `src/timetable/constraints.py` linha 229, `src/timetable/cp_sat_baseline.py`  
+**Descrição:** Condições diferentes para penalizar concentração de aulas.  
+**Impacto:** Soluções podem ser avaliadas diferentemente por CP-SAT e validador Python.  
+**Resolução (T053):** Ambos alinhados a `≤ 2 dias E ≥ 5 aulas` (concentração real).
 
 ### F-015: Modelo de domínio simplificado
 **Severidade:** P1  
@@ -199,8 +210,8 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 
 | Finding | Severidade | Ticket | Status |
 |---------|-----------|--------|--------|
-| F-101 | BLOCKER | T053 | Pendente |
-| F-102 | BLOCKER | T053 | Pendente |
+| F-101 | BLOCKER | T053 | Concluído (T053) |
+| F-102 | BLOCKER | T053 | Concluído (T053) |
 | F-047.1 | BLOCKER | T048 | Concluído (T048) |
 | F-047.2 | BLOCKER | T048 | Concluído (T048) |
 | F-047.3 | BLOCKER | T049 | Concluído (T049) |
@@ -209,10 +220,11 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 | F-014 | P0 | T051 | Concluído (T051) |
 | F-016 | P0 | T052 | Concluído (T052) |
 | F-018 | P0 | T033 | Concluído |
-| F-008 | P1 | T055 | Pendente |
-| F-009 | P1 | T055 | Pendente |
-| F-010 | P1 | T055 | Pendente |
-| F-011 | P1 | T055 | Pendente |
+| F-008 | P1 | T053 | Concluído (T053) |
+| F-009 | P1 | T053 | Concluído (T053) |
+| F-010 | P1 | T053 | Concluído (T053) |
+| F-011 | P1 | T053 | Concluído (T053) |
+| F-012 | P1 | T053 | Concluído (T053) |
 | F-015 | P1 | T051 | Concluído (T051) |
 | F-016 | P1 | T052 | Concluído (T052) |
 | F-017 | P1 | T058 | Pendente |

@@ -275,7 +275,8 @@ def calcular_penalidades_moles(horario: Horario, ctx: ContextoRestricoes) -> lis
                 )
             )
 
-    # S05: padrão A-B-C-A (mesma disciplina interrompida por outra no mesmo dia)
+    # S05: padrão A-B-C-A (mesma disciplina interrompida por outras duas no mesmo dia)
+    # Requer 4 slots consecutivos: disc1, disc2, disc3, disc1 com disc1 != disc2 != disc3 != disc1
     aulas_por_turma_dia: dict[tuple[str, str], list[tuple[int, str]]] = {}
     for aula in horario.aulas:
         chave = (aula.turma, aula.slot.dia)
@@ -283,10 +284,12 @@ def calcular_penalidades_moles(horario: Horario, ctx: ContextoRestricoes) -> lis
     for (turm, dia), aulas_hora_disc in aulas_por_turma_dia.items():
         aulas_hora_disc.sort()
         disciplinas_ordenadas = [disc for _, disc in aulas_hora_disc]
-        for i in range(len(disciplinas_ordenadas) - 2):
+        for i in range(len(disciplinas_ordenadas) - 3):
             if (
-                disciplinas_ordenadas[i] == disciplinas_ordenadas[i + 2]
+                disciplinas_ordenadas[i] == disciplinas_ordenadas[i + 3]
                 and disciplinas_ordenadas[i] != disciplinas_ordenadas[i + 1]
+                and disciplinas_ordenadas[i] != disciplinas_ordenadas[i + 2]
+                and disciplinas_ordenadas[i + 1] != disciplinas_ordenadas[i + 2]
             ):
                 penalidades.append(
                     PenalidadeMole(
@@ -294,7 +297,7 @@ def calcular_penalidades_moles(horario: Horario, ctx: ContextoRestricoes) -> lis
                         descricao=(
                             f"Turma {turm} em {dia}: padrão A-B-C-A "
                             f"({disciplinas_ordenadas[i]}-{disciplinas_ordenadas[i + 1]}-"
-                            f"{disciplinas_ordenadas[i + 2]})"
+                            f"{disciplinas_ordenadas[i + 2]}-{disciplinas_ordenadas[i + 3]})"
                         ),
                         valor=7,
                     )

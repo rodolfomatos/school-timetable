@@ -325,11 +325,9 @@ class CPSATSolver:
             if prof and prof.dia_folga_preferido and sl.dia == prof.dia_folga_preferido:
                 termos_objetivo.append((v, 10))
 
-            # S02: preferência manhã/tarde (usa hora de início se disponível)
-            if prof and prof.prefere_manha:
-                eh_manha = sl.eh_manha() if sl.hora_inicio is not None else sl.hora < 13
-                if not eh_manha:
-                    termos_objetivo.append((v, 8))
+            # S02: preferência manhã/tarde (alinhado com Python: hora >= 13 é tarde)
+            if prof and prof.prefere_manha and sl.hora >= 13:
+                termos_objetivo.append((v, 8))
 
         # S03: duas horas consecutivas da mesma disciplina para a mesma turma
         # Agrupar sessões por (turma, disciplina)
@@ -429,13 +427,55 @@ class CPSATSolver:
                 model.Add(sum(dias_com_aula) >= 2).OnlyEnforceIf(var_somente_um_dia.Not())
                 termos_objetivo.append((var_somente_um_dia, 5))
 
-        # S05: padrão A-B-C-A (mesma disciplina interrompida por outra no mesmo dia)
-        # Nota: Implementação completa requer modelagem de variáveis por posição
-        # de slot dentro de cada (turma, dia). Esta é uma implementação parcial
-        # que será completada em iterações futuras. A restrição S05 está
-        # documentada no catálogo e será implementada completamente quando
-        # o modelo de dados incluir slots com hora de início/fim precisa.
-        pass
+        # S05: padrão A-B-C-A (mesma disciplina interrompida por outras duas no mesmo dia)
+        # Para cada turma/dia, penaliza se existe sequência disc1, disc2, disc3, disc1
+        # com disc2 != disc1, disc3 != disc1, disc2 != disc3
+        for dia, slots_dia in slots_por_dia.items():
+            slots_dia_ordenados = sorted(slots_dia, key=lambda s: s.hora)
+            # Para cada turma, construir lista de (hora, lesson_ids) para este dia
+            for (turm, disc), lesson_ids in sessoes_por_turma_disc.items():
+                if len(lesson_ids) < 4:
+                    continue
+                # Mapear lesson_id -> variáveis de slot para este dia
+                var_tem_aula: dict[str, dict[int, object]] = {}
+                for lid in lesson_ids:
+                    var_tem_aula[lid] = {}
+                    for s in slots_dia_ordenados:
+                        var = model.NewBoolVar(f"tem_{lid}_{s.dia}_{s.hora}")
+                        model.Add(
+                            sum(
+                                vars_x[(lid, p, s2, sl, sub_id)]
+                                for (lid2, p, s2, sl, sub_id), v in vars_x.items()
+                                if lid2 == lid and sl == s
+                            )
+                            == var
+                        )
+                        var_tem_aula[lid][s.hora] = var
+                # Verificar padrão A-B-C-A
+                for i in range(len(slots_dia_ordenados) - 3):
+                    s1 = slots_dia_ordenados[i]
+                    s2 = slots_dia_ordenados[i + 1]
+                    s3 = slots_dia_ordenados[i + 2]
+                    s4 = slots_dia_ordenados[i + 3]
+                    if s1.hora + 1 == s2.hora and s2.hora + 1 == s3.hora and s3.hora + 1 == s4.hora:
+                        # Slots consecutivos: verificar padrão disciplina
+                        for lid1 in lesson_ids:
+                            for lid2 in lesson_ids:
+                                for lid3 in lesson_ids:
+                                    for lid4 in lesson_ids:
+                                        if lid1 != lid2 and lid1 != lid3 and lid1 != lid4 and \
+                                           lid2 != lid3 and lid2 != lid4 and lid3 != lid4:
+                                            # Verificar se lid1, lid2, lid3, lid4 são disciplinas diferentes
+                                            disc1 = self._disc_da_sessao(lid1, aulas_requeridas)
+                                            disc2 = self._disc_da_sessao(lid2, aulas_requeridas)
+                                            disc3 = self._disc_da_sessao(lid3, aulas_requeridas)
+                                            disc4 = self._disc_da_sessao(lid4, aulas_requeridas)
+                                            if disc1 == disc4 and disc1 != disc2 and disc1 != disc3 and disc2 != disc3:
+                                                # Padrão A-B-C-A encontrado
+                                                var_padrao = model.NewBoolVar(f"padrao_abca_{disc1}_{turm}_{s1.dia}_{s1.hora}")
+                                                model.Add(var_tem_aula[lid1][s1.hora] + var_tem_aula[lid2][s2.hora] + var_tem_aula[lid3][s3.hora] + var_tem_aula[lid4][s4.hora] >= 4).OnlyEnforceIf(var_padrao)
+                                                model.Add(var_tem_aula[lid1][s1.hora] + var_tem_aula[lid2][s2.hora] + var_tem_aula[lid3][s3.hora] + var_tem_aula[lid4][s4.hora] <= 3).OnlyEnforceIf(var_padrao.Not())
+                                                termos_objetivo.append((var_padrao, 7))
 
         # S06: falha de duas horas consecutivas para avaliação
         # Professores com carga_maxima >= 4 devem ter pelo menos um bloco de 2h
@@ -521,19 +561,19 @@ class CPSATSolver:
             termos_objetivo.append((var_abaixo, 8))
             termos_objetivo.append((var_acima, 8))
 
-        # --- S08: professor a trabalhar muitos dias consecutivos ---
-        # Calcular sequências de dias de trabalho
+        # --- S08: professor a trabalhar em 5+ dias diferentes (alinhado com Python) ---
         for prof_id in professores:
             dias_ordenados = sorted({sl.dia for sl in slots})
-            for i in range(len(dias_ordenados)):
+            var_dias_com_aula: list[object] = []
+            for dia in dias_ordenados:
                 var_dia_tem_aula = model.NewBoolVar(
-                    f"dia_tem_aula_prof_{prof_id}_{dias_ordenados[i]}"
+                    f"dia_tem_aula_prof_{prof_id}_{dia}"
                 )
                 model.Add(
                     sum(
                         vars_x[(lid, p, s, sl, sub_id)]
                         for (lid, p, s, sl, sub_id), v in vars_x.items()
-                        if p == prof_id and sl.dia == dias_ordenados[i]
+                        if p == prof_id and sl.dia == dia
                     )
                     >= var_dia_tem_aula
                 )
@@ -541,34 +581,25 @@ class CPSATSolver:
                     sum(
                         vars_x[(lid, p, s, sl, sub_id)]
                         for (lid, p, s, sl, sub_id), v in vars_x.items()
-                        if p == prof_id and sl.dia == dias_ordenados[i]
+                        if p == prof_id and sl.dia == dia
                     )
                     <= len(slots) * var_dia_tem_aula
                 )
-            # Penalizar sequências de 5+ dias consecutivos
-            for i in range(len(dias_ordenados) - 4):
-                janela = dias_ordenados[i : i + 5]
-                var_todos_dias = model.NewBoolVar(
-                    f"janela_5_dias_{prof_id}_{'_'.join(d for d in janela)}"
-                )
-                model.Add(
-                    sum(
-                        vars_x[(lid, p, s, sl, sub_id)]
-                        for (lid, p, s, sl, sub_id), v in vars_x.items()
-                        if p == prof_id and sl.dia in janela
-                    )
-                    >= 5 * var_todos_dias
-                )
-                # Se tem aula em todos os 5 dias, penalizar
-                termos_objetivo.append((var_todos_dias, 12))
+                var_dias_com_aula.append(var_dia_tem_aula)
+            # Penalizar se tem aula em 5+ dias
+            if len(var_dias_com_aula) >= 5:
+                var_soma_dias = model.NewIntVar(0, len(var_dias_com_aula), f"soma_dias_{prof_id}")
+                model.Add(var_soma_dias == sum(var_dias_com_aula))
+                var_5_ou_mais = model.NewBoolVar(f"5_ou_mais_dias_{prof_id}")
+                model.Add(var_soma_dias >= 5).OnlyEnforceIf(var_5_ou_mais)
+                model.Add(var_soma_dias <= 4).OnlyEnforceIf(var_5_ou_mais.Not())
+                termos_objetivo.append((var_5_ou_mais, 12))
 
-        # --- S09: distribuição desigual de aulas entre professores ---
-        # Normalizar por carga contratual
+        # --- S09: distribuição desigual entre professores (diferença absoluta > 2, alinhado com Python) ---
         for disc_id in disciplinas:
             profs_disc = professores_por_disciplina.get(disc_id, [])
             if len(profs_disc) > 1:
                 contagens: list[object] = []
-                cargas: list[int] = []
                 for p in profs_disc:
                     var_count = model.NewIntVar(0, len(slots), f"count_{disc_id}_{p}")
                     model.Add(
@@ -586,7 +617,6 @@ class CPSATSolver:
                         )
                     )
                     contagens.append(var_count)
-                    cargas.append(professores[p].carga_maxima_semanal)
                 if len(contagens) > 1:
                     max_var = model.NewIntVar(0, len(slots), f"max_{disc_id}")
                     min_var = model.NewIntVar(0, len(slots), f"min_{disc_id}")
@@ -594,17 +624,17 @@ class CPSATSolver:
                     model.AddMinEquality(min_var, contagens)
                     diff_var = model.NewIntVar(0, len(slots), f"diff_{disc_id}")
                     model.Add(diff_var == max_var - min_var)
-                    # Normalizar: diferença relativa à carga média
-                    media_carga = sum(cargas) / len(cargas) if cargas else 1
-                    limite = max(2, int(media_carga * 0.25))  # 25% da carga média
+                    # Alinhado com Python: penalizar se max - min > 2
                     penaliza_s09 = model.NewBoolVar(f"penaliza_s09_{disc_id}")
-                    model.Add(diff_var > limite).OnlyEnforceIf(penaliza_s09)
-                    model.Add(diff_var <= limite).OnlyEnforceIf(penaliza_s09.Not())
+                    model.Add(diff_var > 2).OnlyEnforceIf(penaliza_s09)
+                    model.Add(diff_var <= 2).OnlyEnforceIf(penaliza_s09.Not())
                     termos_objetivo.append((penaliza_s09, 11))
 
-        # --- S10: carga concentrada em poucos dias ---
+        # --- S10: carga concentrada em <= 2 dias com >= 5 aulas (alinhado com Python) ---
         for prof_id in professores:
-            for dia in sorted({sl.dia for sl in slots}):
+            dias_ordenados = sorted({sl.dia for sl in slots})
+            var_dia_counts: list[object] = []
+            for dia in dias_ordenados:
                 var_dia_count = model.NewIntVar(0, len(slots), f"countday_{prof_id}_{dia}")
                 model.Add(
                     var_dia_count
@@ -614,11 +644,30 @@ class CPSATSolver:
                         if p == prof_id and sl.dia == dia
                     )
                 )
-                # Penalizar quando há >= 5 aulas em um único dia (alinhado com Python)
-                penaliza_s10 = model.NewBoolVar(f"penaliza_s10_{prof_id}_{dia}")
-                model.Add(var_dia_count >= 5).OnlyEnforceIf(penaliza_s10)
-                model.Add(var_dia_count <= 4).OnlyEnforceIf(penaliza_s10.Not())
-                termos_objetivo.append((penaliza_s10, 10))
+                var_dia_counts.append((dia, var_dia_count))
+            # Contar total de aulas do professor
+            var_total_aulas = model.NewIntVar(0, len(slots), f"total_aulas_{prof_id}")
+            model.Add(var_total_aulas == sum(vc for _, vc in var_dia_counts))
+            # Contar dias com aula
+            var_dias_com_aula: list[object] = []
+            for dia, vc in var_dia_counts:
+                var_tem = model.NewBoolVar(f"tem_aula_{prof_id}_{dia}")
+                model.Add(vc >= 1).OnlyEnforceIf(var_tem)
+                model.Add(vc == 0).OnlyEnforceIf(var_tem.Not())
+                var_dias_com_aula.append(var_tem)
+            var_soma_dias = model.NewIntVar(0, len(var_dias_com_aula), f"soma_dias_{prof_id}")
+            model.Add(var_soma_dias == sum(var_dias_com_aula))
+            # Penalizar se <= 2 dias e >= 5 aulas
+            var_concentrada = model.NewBoolVar(f"concentrada_{prof_id}")
+            model.Add(var_soma_dias <= 2).OnlyEnforceIf(var_concentrada)
+            model.Add(var_soma_dias >= 3).OnlyEnforceIf(var_concentrada.Not())
+            var_muitas_aulas = model.NewBoolVar(f"muitas_aulas_{prof_id}")
+            model.Add(var_total_aulas >= 5).OnlyEnforceIf(var_muitas_aulas)
+            model.Add(var_total_aulas <= 4).OnlyEnforceIf(var_muitas_aulas.Not())
+            var_s10 = model.NewBoolVar(f"s10_{prof_id}")
+            model.AddBoolAnd([var_concentrada, var_muitas_aulas]).OnlyEnforceIf(var_s10)
+            model.AddBoolOr([var_concentrada.Not(), var_muitas_aulas.Not()]).OnlyEnforceIf(var_s10.Not())
+            termos_objetivo.append((var_s10, 10))
 
         if termos_objetivo:
             model.Minimize(sum(v * w for v, w in termos_objetivo))
