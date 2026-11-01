@@ -1,11 +1,13 @@
-"""Serviço que envolve o solver Python existente."""
+"""Serviço que envolve o solver Python existente com persistência de jobs."""
 
 from __future__ import annotations
 
 import logging
 import random
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 
 from app.core.config import settings
 from app.models.school import (
@@ -17,23 +19,46 @@ from app.models.school import (
     ClassSubject,
     TeacherSubject,
 )
+from app.models.schedule import (
+    ScheduleAssignment,
+    ScheduleVersion,
+    SolverJob,
+    SolverJobStatus,
+)
 from app.models.user import User
 from app.db.session import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
-# Armazenamento em memória de tarefas (em produção, usar Redis/DB)
-_solver_tasks: dict[str, dict] = {}
-
 
 def _run_solver_sync(
-    task_id: str,
+    job_id: str,
     institution_id: str | None,
     solver: str,
     time_limit_seconds: int,
     additional_unavailabilities: list[dict] | None,
+    created_by: int | None,
+    seed: int | None,
 ) -> None:
-    """Executa o solver Python de forma síncrona (em thread separada)."""
+    """Executa o solver Python de forma síncrona (em thread separada) e persiste o job."""
+
+    start_time = time.time()
+
+    async def _update_job_status(
+        status: str,
+        **kwargs,
+    ) -> None:
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import select
+            job = (await db.execute(select(SolverJob).where(SolverJob.id == job_id))).scalar_one()
+            job.status = status
+            for key, value in kwargs.items():
+                setattr(job, key, value)
+            await db.commit()
+
+    # Atualizar status para RUNNING
+    import asyncio as _asyncio
+    _asyncio.run(_update_job_status(SolverJobStatus.RUNNING, started_at=datetime.now(timezone.utc)))
 
     try:
         # Importação tardia para evitar dependência pesada no módulo principal
@@ -51,9 +76,6 @@ def _run_solver_sync(
         from timetable.cp_sat_baseline import CPSATSolver
 
         # Buscar entidades da base de dados
-        # Nota: esta função corre numa thread, então precisamos de uma nova sessão
-        import asyncio as _asyncio
-
         async def _fetch_entities():
             async with AsyncSessionLocal() as db:
                 from sqlalchemy import select
@@ -202,9 +224,19 @@ def _run_solver_sync(
                 slots.append(Slot(dia=dia, hora=hora))
 
         # Construir solução inicial viável a partir do domínio
-        horario_inicial = construir_solucao_inicial(problema, slots, rng=random.Random(42))
+        rng = random.Random(seed if seed is not None else 42)
+        horario_inicial = construir_solucao_inicial(problema, slots, rng=rng)
+
+        solver_params = {
+            "time_limit_seconds": time_limit_seconds,
+            "seed": seed if seed is not None else 42,
+        }
 
         # Executar solver
+        solver_used = solver
+        resultado = None
+        
+
         if solver == "cp_sat":
             cp_solver = CPSATSolver()
             if cp_solver.esta_disponivel():
@@ -212,13 +244,13 @@ def _run_solver_sync(
                     horario_inicial, ctx, tempo_limite_segundos=time_limit_seconds
                 )
             else:
-                # Fallback para simulated annealing
+                solver_used = "simulated_annealing"
                 resultado = simulated_annealing(
                     horario_inicial,
                     ctx,
                     slots,
                     tempo_limite_segundos=time_limit_seconds,
-                    semente=42,
+                    semente=seed if seed is not None else 42,
                 )
         elif solver == "tabu_search":
             resultado = tabu_search(
@@ -226,7 +258,7 @@ def _run_solver_sync(
                 ctx,
                 slots,
                 tempo_limite_segundos=time_limit_seconds,
-                semente=42,
+                semente=seed if seed is not None else 42,
             )
         else:  # simulated_annealing (default)
             resultado = simulated_annealing(
@@ -234,7 +266,7 @@ def _run_solver_sync(
                 ctx,
                 slots,
                 tempo_limite_segundos=time_limit_seconds,
-                semente=42,
+                semente=seed if seed is not None else 42,
             )
 
         # Avaliar resultado
@@ -242,64 +274,177 @@ def _run_solver_sync(
 
         avaliacao = avaliar(resultado, ctx)
 
-        # Guardar resultado na tarefa
-        _solver_tasks[task_id] = {
-            "status": "completed",
-            "schedule_version_id": None,  # Será preenchido quando guardar na BD
-            "score": avaliacao.score,
-            "hard_violations": len(avaliacao.violacoes_hard),
-            "soft_penalties": avaliacao.penalidades_moles,
-            "error": None,
-            "result": resultado,
-            "avaliacao": avaliacao,
-            "ctx": ctx,
-        }
+        # Verificar se o solver retornou o horário inicial (fallback de timeout sem solução)
+        # Comparar se o resultado é idêntico ao inicial (mesmas aulas)
+        resultado_e_inicial = (
+            len(resultado.aulas) == len(horario_inicial.aulas)
+            and all(
+                any(
+                    a2.turma == a1.turma
+                    and a2.disciplina == a1.disciplina
+                    and a2.professor == a1.professor
+                    and a2.sala == a1.sala
+                    and a2.slot == a1.slot
+                    and a2.subgrupo_id == a1.subgrupo_id
+                    for a2 in resultado.aulas
+                )
+                for a1 in horario_inicial.aulas
+            )
+        )
+
+        # Determinar status final
+        if avaliacao.viavel:
+            final_status = SolverJobStatus.COMPLETED
+        elif resultado_e_inicial and not avaliacao.viavel:
+            # Timeout sem solução viável
+            final_status = SolverJobStatus.TIMEOUT_NO_SOLUTION
+        else:
+            # Timeout com incumbent (solução viável encontrada mas tempo esgotou)
+            final_status = SolverJobStatus.COMPLETED
+
+        elapsed = time.time() - start_time
+
+        # Persistir ScheduleVersion e Assignments se concluído com sucesso
+        schedule_version_id = None
+        if final_status in (SolverJobStatus.COMPLETED, SolverJobStatus.TIMEOUT_WITH_INCUMBENT) and avaliacao.viavel:
+            async def _persist_schedule():
+                async with AsyncSessionLocal() as db:
+                    version = ScheduleVersion(
+                        institution_id=institution_id,
+                        status="draft",
+                        solver_used=solver_used,
+                        score=avaliacao.score,
+                        hard_violations=len(avaliacao.violacoes_hard),
+                        soft_penalties=avaliacao.penalidades_moles,
+                    )
+                    db.add(version)
+                    await db.flush()
+
+                    for aula in resultado.aulas:
+                        assignment = ScheduleAssignment(
+                            version_id=version.id,
+                            class_id=int(aula.turma),
+                            subject_id=int(aula.disciplina),
+                            teacher_id=int(aula.professor),
+                            room_id=int(aula.sala),
+                            slot={"dia": aula.slot.dia, "hora": aula.slot.hora},
+                        )
+                        db.add(assignment)
+
+                    await db.commit()
+                    return version.id
+
+            schedule_version_id = _asyncio.run(_persist_schedule())
+
+        # Atualizar job com resultado final
+        _asyncio.run(_update_job_status(
+            final_status,
+            schedule_version_id=schedule_version_id,
+            score=avaliacao.score if avaliacao.viavel else None,
+            hard_violations=len(avaliacao.violacoes_hard),
+            soft_penalties=avaliacao.penalidades_moles,
+            error=None if avaliacao.viavel else "Timeout sem solução viável" if final_status == SolverJobStatus.TIMEOUT_NO_SOLUTION else "Timeout com solução incumbent",
+            elapsed_seconds=elapsed,
+            seed=seed if seed is not None else 42,
+            solver_params=solver_params,
+            completed_at=datetime.now(timezone.utc),
+        ))
 
     except Exception as e:
-        logger.exception("Erro no solver")
-        _solver_tasks[task_id] = {
-            "status": "failed",
-            "schedule_version_id": None,
-            "score": None,
-            "hard_violations": None,
-            "soft_penalties": None,
-            "error": str(e),
-        }
+        elapsed = time.time() - start_time
+        logger.exception("Erro no solver job %s", job_id)
+        _asyncio.run(_update_job_status(
+            SolverJobStatus.FAILED,
+            error=str(e),
+            elapsed_seconds=elapsed,
+            completed_at=datetime.now(timezone.utc),
+        ))
 
 
-def create_solver_task(
+def create_solver_job(
     institution_id: str | None,
     solver: str,
     time_limit_seconds: int,
     additional_unavailabilities: list[dict] | None = None,
+    created_by: int | None = None,
+    seed: int | None = None,
 ) -> str:
-    """Cria uma tarefa de solver e devolve o ID da tarefa."""
+    """Cria um job de solver persistente e devolve o ID do job."""
 
-    task_id = str(uuid.uuid4())
-    _solver_tasks[task_id] = {
-        "status": "pending",
-        "schedule_version_id": None,
-        "score": None,
-        "hard_violations": None,
-        "soft_penalties": None,
-        "error": None,
-    }
+    job_id = str(uuid.uuid4())
+
+    async def _create_job():
+        async with AsyncSessionLocal() as db:
+            job = SolverJob(
+                id=job_id,
+                institution_id=institution_id,
+                status=SolverJobStatus.PENDING,
+                solver=solver,
+                time_limit_seconds=time_limit_seconds,
+                additional_unavailabilities=additional_unavailabilities,
+                created_by=created_by,
+                seed=seed if seed is not None else 42,
+            )
+            db.add(job)
+            await db.commit()
+
+    import asyncio as _asyncio
+    _asyncio.run(_create_job())
 
     # Executar em thread separada para não bloquear a API
     executor = ThreadPoolExecutor(max_workers=settings.SOLVER_MAX_WORKERS)
     executor.submit(
         _run_solver_sync,
-        task_id,
+        job_id,
         institution_id,
         solver,
         time_limit_seconds,
         additional_unavailabilities,
+        created_by,
+        seed,
     )
 
-    return task_id
+    return job_id
 
 
-def get_solver_task(task_id: str) -> dict | None:
-    """Devolve o estado de uma tarefa de solver."""
+async def get_solver_job(job_id: str) -> SolverJob | None:
+    """Devolve o job de solver por ID."""
 
-    return _solver_tasks.get(task_id)
+    async with AsyncSessionLocal() as db:
+        from sqlalchemy import select
+        return (await db.execute(select(SolverJob).where(SolverJob.id == job_id))).scalar_one_or_none()
+
+
+async def list_solver_jobs(
+    institution_id: str | None = None,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[SolverJob]:
+    """Lista jobs de solver com filtros opcionais."""
+
+    async with AsyncSessionLocal() as db:
+        from sqlalchemy import select
+        query = select(SolverJob).order_by(SolverJob.created_at.desc())
+        if institution_id:
+            query = query.where(SolverJob.institution_id == institution_id)
+        if status:
+            query = query.where(SolverJob.status == status)
+        query = query.limit(limit).offset(offset)
+        return (await db.execute(query)).scalars().all()
+
+
+async def cancel_solver_job(job_id: str, cancelled_by: int | None = None) -> bool:
+    """Cancela um job pendente ou em execução."""
+
+    async with AsyncSessionLocal() as db:
+        from sqlalchemy import select
+        job = (await db.execute(select(SolverJob).where(SolverJob.id == job_id))).scalar_one_or_none()
+        if not job:
+            return False
+        if job.status not in (SolverJobStatus.PENDING, SolverJobStatus.RUNNING):
+            return False
+        job.status = SolverJobStatus.CANCELLED
+        job.completed_at = datetime.now(timezone.utc)
+        await db.commit()
+        return True

@@ -60,7 +60,7 @@
 | T054 | Fase 4: Semântica dos subgrupos (Auditoria) | Concluído | Build | P0 |
 | T055 | Fase 5: Consistência das restrições S01–S10 (Auditoria) | Concluído | Build | P1 |
 | T056 | Fase 6: Cache e avaliação incremental (Auditoria) | Concluído | Build | P1 |
-| T057 | Fase 7: SolverResult e jobs persistentes (Auditoria) | Pendente | Build | P1 |
+| T057 | Fase 7: SolverResult e jobs persistentes (Auditoria) | Concluído | Build | P1 |
 | T058 | Fase 7: Multi-tenancy, migrações e produção (Auditoria) | Pendente | Build | P1 |
 | T059 | Fase 8: Verificação epistemológica do AES (Auditoria) | Pendente | Learn | P1 |
 

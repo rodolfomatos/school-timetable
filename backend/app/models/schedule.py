@@ -153,3 +153,64 @@ class Dispute(Base):
         ScheduleAssignment, back_populates="disputes"
     )
     resolver: Mapped[User | None] = relationship(User, foreign_keys=[resolved_by])
+
+
+class SolverJobStatus(str):
+    """Estados possíveis de um job de solver."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    TIMEOUT_WITH_INCUMBENT = "timeout_with_incumbent"
+    TIMEOUT_NO_SOLUTION = "timeout_no_solution"
+
+
+class SolverJob(Base):
+    """Job de execução do solver com persistência e ciclo de vida completo."""
+
+    __tablename__ = "solver_jobs"
+
+    id: Mapped[UUIDPK]
+    institution_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    # Estado do job
+    status: Mapped[str] = mapped_column(String(50), default=SolverJobStatus.PENDING, nullable=False)
+    # Solver solicitado: cp_sat, tabu_search, simulated_annealing
+    solver: Mapped[str] = mapped_column(String(50), nullable=False)
+    # Limite de tempo em segundos
+    time_limit_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Indisponibilidades adicionais passadas na request (JSON)
+    additional_unavailabilities: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
+    # Referência à versão do horário gerada (se concluído com sucesso)
+    schedule_version_id: Mapped[int | None] = mapped_column(
+        ForeignKey("schedule_versions.id"), nullable=True, index=True
+    )
+    # Score final (None se falhou/sem solução)
+    score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Violações duras
+    hard_violations: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Penalidades moles
+    soft_penalties: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Mensagem de erro (se falhou)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Tempo de execução em segundos
+    elapsed_seconds: Mapped[float | None] = mapped_column(nullable=True)
+    # Semente aleatória usada
+    seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Parâmetros do solver (JSON)
+    solver_params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Resultado bruto do solver (para debug/auditoria)
+    raw_result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # ID do utilizador que iniciou o job
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    created_at: Mapped[CreatedAt]
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Relacionamentos
+    schedule_version: Mapped["ScheduleVersion | None"] = relationship("ScheduleVersion")
+    creator: Mapped["User | None"] = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<SolverJob(id={self.id}, status={self.status}, solver={self.solver})>"

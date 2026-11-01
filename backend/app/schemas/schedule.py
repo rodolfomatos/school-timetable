@@ -77,14 +77,14 @@ class SolverRunRequest(BaseModel):
 
 
 class SolverRunResponse(BaseModel):
-    task_id: str
+    job_id: str
     status: str
     message: str
 
 
 class SolverStatusResponse(BaseModel):
-    task_id: str
-    status: str  # pending, running, completed, failed
+    job_id: str
+    status: str  # pending, running, completed, failed, cancelled, timeout_with_incumbent, timeout_no_solution
     schedule_version_id: int | None = None
     score: int | None = None
     hard_violations: int | None = None
