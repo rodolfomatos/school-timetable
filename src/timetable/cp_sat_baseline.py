@@ -182,6 +182,29 @@ class CPSATSolver:
             s["lesson_id"]: s["turma_id"] for s in aulas_requeridas
         }
 
+        # --- Fixar atribuições do horário_inicial (seed) ---
+        # Para cada aula no horário inicial, se corresponde a uma sessão requerida,
+        # fixa a variável correspondente a 1.
+        for aula_inicial in horario_inicial.aulas:
+            # Encontra a sessão requerida correspondente
+            for sessao in aulas_requeridas:
+                if (
+                    sessao["turma_id"] == aula_inicial.turma
+                    and sessao["disc_id"] == aula_inicial.disciplina
+                    and sessao.get("subgrupo_id") == aula_inicial.subgrupo_id
+                ):
+                    # Procura a variável que corresponde a esta atribuição
+                    for (lid, p, s, sl, sub_id), var in vars_x.items():
+                        if (
+                            lid == sessao["lesson_id"]
+                            and p == aula_inicial.professor
+                            and s == aula_inicial.sala
+                            and sl == aula_inicial.slot
+                            and sub_id == aula_inicial.subgrupo_id
+                        ):
+                            model.Add(var == 1)
+                            break
+
         # --- Restrição de cobertura: cada sessão tem exatamente uma atribuição ---
         # --- Restrição de cobertura: cada sessão tem exatamente uma atribuição ---
         for sessao in aulas_requeridas:

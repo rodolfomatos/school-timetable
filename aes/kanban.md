@@ -55,7 +55,7 @@
 | T049 | Fase 2: Integridade do modelo SQLAlchemy (Auditoria) | Concluído | Build | P0 |
 | T050 | Fase 3: Autenticação e privilégios (Auditoria) | Concluído | Build | P0 |
 | T051 | Fase 3: Modelo de domínio e integração (Auditoria) | Concluído | Build | P0 |
-| T052 | Fase 3: Construção de solução inicial (Auditoria) | Pendente | Build | P0 |
+| T052 | Fase 3: Construção de solução inicial (Auditoria) | Concluído | Build | P0 |
 | T053 | Fase 4: Correção matemática do CP-SAT (Auditoria) | Pendente | Build | P0 |
 | T054 | Fase 4: Semântica dos subgrupos (Auditoria) | Pendente | Build | P0 |
 | T055 | Fase 5: Consistencia das restrições S01–S10 (Auditoria) | Pendente | Build | P1 |

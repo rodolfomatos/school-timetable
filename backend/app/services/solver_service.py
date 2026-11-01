@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import random
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
@@ -13,6 +14,8 @@ from app.models.school import (
     Subject,
     Class as SchoolClass,
     Teacher,
+    ClassSubject,
+    TeacherSubject,
 )
 from app.models.user import User
 from app.db.session import AsyncSessionLocal
@@ -34,16 +37,15 @@ def _run_solver_sync(
 
     try:
         # Importação tardia para evitar dependência pesada no módulo principal
-        from timetable.constraints import (
-            ContextoRestricoes,
-        )
-        from timetable.models import (
-            Horario,
+        from timetable.domain import (
+            Disciplina,
+            EntradaCurricular,
             Professor,
             Sala,
             Slot,
             Turma,
-            Disciplina,
+            construir_problema,
+            construir_solucao_inicial,
         )
         from timetable.local_search import simulated_annealing, tabu_search
         from timetable.cp_sat_baseline import CPSATSolver
@@ -63,72 +65,135 @@ def _run_solver_sync(
                 teachers = (await db.execute(select(Teacher))).scalars().all()
                 users = (await db.execute(select(User))).scalars().all()
 
-                return courses, rooms, subjects, classes, teachers, users
+                # Currículo e qualificações
+                class_subjects = (
+                    await db.execute(
+                        select(ClassSubject).where(ClassSubject.teacher_id.is_not(None))
+                    )
+                ).scalars().all()
+                teacher_subjects = (await db.execute(select(TeacherSubject))).scalars().all()
 
-        courses, rooms, subjects, classes, teachers, users = _asyncio.run(
-            _fetch_entities()
-        )
+                return (
+                    courses,
+                    rooms,
+                    subjects,
+                    classes,
+                    teachers,
+                    users,
+                    class_subjects,
+                    teacher_subjects,
+                )
 
-        # Construir contexto de restrições
-        ctx_professores = {}
+        (
+            courses,
+            rooms,
+            subjects,
+            classes,
+            teachers,
+            users,
+            class_subjects,
+            teacher_subjects,
+        ) = _asyncio.run(_fetch_entities())
+
+        # Construir ProblemInstance a partir dos dados do ORM
+        professores_domain: dict[str, Professor] = {}
         for t in teachers:
             disponibilidade = frozenset()
             if t.availability:
-                for dia, horas in t.availability.items():
-                    for h in horas:
-                        disponibilidade.add(Slot(dia=dia, hora=h))
-
-            ctx_professores[t.id] = Professor(
+                disponibilidade = frozenset(
+                    Slot(dia=dia, hora=h)
+                    for dia, horas in t.availability.items()
+                    for h in horas
+                )
+            professores_domain[str(t.id)] = Professor(
                 identificador=str(t.id),
                 nome=t.user.full_name if t.user else f"Prof. {t.id}",
                 disponibilidade=disponibilidade,
                 dia_folga_preferido=t.day_off_preferred,
                 prefere_manha=t.morning_preferred,
-                carga_maxima_semanal=t.commute_time + 20,  # aproximação
+                carga_maxima_semanal=t.commute_time + 20,
                 carga_minima_semanal=5,
+                qualificacoes=frozenset(),
+                qualificacoes_definidas=False,
             )
 
-        ctx_salas = {}
-        for r in rooms:
-            ctx_salas[str(r.id)] = Sala(
+        # Indisponibilidades adicionais vindas da request
+        unavailabilities_adicionais: dict[str, set[Slot]] = {}
+        if additional_unavailabilities:
+            for u in additional_unavailabilities:
+                tid = str(u.get("teacher_id"))
+                slot = Slot(dia=u["slot"]["dia"], hora=u["slot"]["hora"])
+                unavailabilities_adicionais.setdefault(tid, set()).add(slot)
+
+        salas_domain = {
+            str(r.id): Sala(
                 identificador=str(r.id),
                 capacidade=r.capacity,
                 tipo=r.room_type,
-                dias_disponiveis=frozenset(),
             )
-
-        ctx_turmas = {}
-        for c in classes:
-            ctx_turmas[str(c.id)] = Turma(
+            for r in rooms
+        }
+        turmas_domain = {
+            str(c.id): Turma(
                 identificador=str(c.id),
                 ano=c.year,
                 numero_alunos=c.student_count,
             )
-
-        ctx_discs = {}
-        for s in subjects:
-            ctx_discs[str(s.id)] = Disciplina(
+            for c in classes
+        }
+        disciplinas_domain = {
+            str(s.id): Disciplina(
                 identificador=str(s.id),
                 nome=s.name,
                 carga_semanal=s.weekly_load,
                 tipo_sala_requerida=s.room_type_required,
             )
+            for s in subjects
+        }
 
-        # Casamentos (professores casados)
-        casamentos = []
-        # Simplificação: não há dados de casamento no modelo atual
+        # Currículo: usa ClassSubject (relação explícita)
+        curriculo: list[EntradaCurricular] = []
+        for cs in class_subjects:
+            curriculo.append(
+                EntradaCurricular(
+                    turma_id=str(cs.class_id),
+                    disciplina_id=str(cs.subject_id),
+                    professores_elegiveis=(str(cs.teacher_id),) if cs.teacher_id else (),
+                    subgrupo_id=None,  # TODO: suportar subgrupos
+                )
+            )
 
-        # Relações filho
-        relacoes_filho = []
+        # Qualificações: TeacherSubject
+        qualificacoes: dict[str, set[str]] = {}
+        for ts in teacher_subjects:
+            qualificacoes.setdefault(str(ts.teacher_id), set()).add(str(ts.subject_id))
+        for prof_id, prof in professores_domain.items():
+            if prof_id in qualificacoes:
+                professores_domain[prof_id] = prof.__class__(
+                    **{
+                        **prof.__dict__,
+                        "qualificacoes": frozenset(qualificacoes[prof_id]),
+                        "qualificacoes_definidas": True,
+                    }
+                )
 
-        ctx = ContextoRestricoes(
-            professores={str(k): v for k, v in ctx_professores.items()},
-            salas={str(k): v for k, v in ctx_salas.items()},
-            turmas={str(k): v for k, v in ctx_turmas.items()},
-            disciplinas={str(k): v for k, v in ctx_discs.items()},
-            casamentos=casamentos,
-            relacoes_filho=relacoes_filho,
+        # Construir ProblemInstance com validação
+        problema = construir_problema(
+            professores=professores_domain,
+            salas=salas_domain,
+            turmas=turmas_domain,
+            disciplinas=disciplinas_domain,
+            curriculo=curriculo,
+            indisponibilidades_adicionais=unavailabilities_adicionais,
         )
+
+        if problema.tem_erros:
+            # Converter diagnósticos para erro legível
+            erros = [d.mensagem for d in problema.diagnosticos if d.severidade == "ERROR"]
+            raise ValueError("; ".join(erros) or "ProblemInstance inválido")
+
+        # Contexto para o solver
+        ctx = problema.para_contexto()
 
         # Gerar slots
         slots = []
@@ -136,8 +201,8 @@ def _run_solver_sync(
             for hora in range(1, 9):
                 slots.append(Slot(dia=dia, hora=hora))
 
-        # Horário inicial vazio
-        horario_inicial = Horario()
+        # Construir solução inicial viável a partir do domínio
+        horario_inicial = construir_solucao_inicial(problema, slots, rng=random.Random(42))
 
         # Executar solver
         if solver == "cp_sat":

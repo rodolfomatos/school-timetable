@@ -59,21 +59,24 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 **Evidência:** `src/timetable/seed.py`  
 **Descrição:** A função `gerar_seed_parcial()` usa valores fixos: `turma="Turma A"`, `disciplina="Matemática"`, `professor="Prof. X"`, `sala="Sala 1"`.  
 **Impacto:** O seed não usa dados reais da escola, não respeita restrições duras, e não constrói uma solução inicial válida.  
-**Condição de fechamento:** Substituir por construção baseada no ProblemInstance com validação de restrições duras.
+**Condição de fechamento:** Substituir por construção baseada no ProblemInstance com validação de restrições duras.  
+**Resolução (T052):** `construir_solucao_inicial()` usa domínio, valida H01–H05, reporta `SESSAO_NAO_COLOCADA`.
 
 ### F-047.6: SA e Tabu Search iniciam com Horario() vazio
 **Severidade:** MAJOR  
 **Evidência:** `src/timetable/local_search.py`  
 **Descrição:** Tanto `simulated_annealing` quanto `tabu_search` começam com `Horario()` (horário vazio). Como são metaheurísticas de busca local, não conseguem gerar soluções a partir do nada.  
 **Impacto:** O solver produz horários vazios ou incompletos, mas os testes de integração passam porque não verificam se todas as sessões foram atribuídas.  
-**Condição de fechamento:** Implementar construtor de solução inicial baseado no ProblemInstance.
+**Condição de fechamento:** Implementar construtor de solução inicial baseado no ProblemInstance.  
+**Resolução (T052):** Backend passa `horario_inicial` viável a SA/Tabu; seed construído do domínio.
 
 ### F-047.7: CP-SAT ignora horário_inicial
 **Severidade:** MAJOR  
 **Evidência:** `src/timetable/cp_sat_baseline.py`  
 **Descrição:** O parâmetro `horario_inicial` é recebido mas não usado na construção do modelo CP-SAT.  
 **Impacto:** O CP-SAT não aproveita o seed parcial nem respeita slots imutáveis.  
-**Condição de fechamento:** Implementar uso do horário inicial como seed no modelo CP-SAT.
+**Condição de fechamento:** Implementar uso do horário inicial como seed no modelo CP-SAT.  
+**Resolução (T052):** CP-SAT fixa variáveis do seed via `model.Add(var == 1)`.
 
 ---
 
@@ -204,14 +207,14 @@ Estabelecer uma baseline reproduzível e verificar independentemente o estado re
 | F-047.4 | MAJOR | T050 | Concluído (T050) |
 | F-013 | P0 | T051 | Concluído (T051) |
 | F-014 | P0 | T051 | Concluído (T051) |
-| F-016 | P0 | T052 | Pendente |
+| F-016 | P0 | T052 | Concluído (T052) |
 | F-018 | P0 | T033 | Concluído |
 | F-008 | P1 | T055 | Pendente |
 | F-009 | P1 | T055 | Pendente |
 | F-010 | P1 | T055 | Pendente |
 | F-011 | P1 | T055 | Pendente |
 | F-015 | P1 | T051 | Concluído (T051) |
-| F-016 | P1 | T052 | Pendente |
+| F-016 | P1 | T052 | Concluído (T052) |
 | F-017 | P1 | T058 | Pendente |
 | F-019 | P2 | T058 | Pendente |
 | F-020 | P3 | T058 | Pendente |

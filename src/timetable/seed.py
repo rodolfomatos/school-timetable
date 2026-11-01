@@ -14,6 +14,8 @@ from __future__ import annotations
 import random
 from typing import Optional
 
+from .constraints import ContextoRestricoes
+from .domain import Diagnostico, ProblemInstance, SessaoRequerida
 from .models import Aula, Horario, Slot
 
 
@@ -130,3 +132,170 @@ def marcar_como_imutavel(slots: list[Slot]) -> frozenset[Slot]:
     """Retorna os slots do seed como um conjunto imutável."""
 
     return frozenset(slots)
+
+
+# ---------------------------------------------------------------------------
+# Construtor de solução inicial (para T052)
+# ---------------------------------------------------------------------------
+
+
+def _slots_validos_para_aula(
+    aula: Aula,
+    horario: Horario,
+    ctx: ContextoRestricoes,
+    slots: list[Slot],
+) -> list[Slot]:
+    """Filtra slots onde a aula pode ser colocada sem violar restrições duras."""
+
+    validos = []
+    for slot in slots:
+        if horario.professor_ocupado_em(aula.professor, slot):
+            continue
+        if horario.sala_ocupada_em(aula.sala, slot):
+            continue
+        if horario.turma_ocupada_em(aula.turma, slot, aula.subgrupo_id):
+            continue
+        # H04: sala compatível
+        sala_obj = ctx.sala_por_id(aula.sala)
+        disc_obj = ctx.disciplina_por_id(aula.disciplina)
+        if sala_obj and disc_obj and sala_obj.tipo != disc_obj.tipo_sala_requerida:
+            continue
+        # H05: professor disponível
+        prof_obj = ctx.professor_por_id(aula.professor)
+        if prof_obj and not prof_obj.esta_disponivel(slot):
+            continue
+        validos.append(slot)
+    return validos
+
+
+def _tentar_colocar_aula(
+    aula: Aula,
+    horario: Horario,
+    ctx: ContextoRestricoes,
+    slots: list[Slot],
+    rng: random.Random,
+) -> bool:
+    """Tenta colocar a aula num slot válido; retorna True se conseguiu."""
+
+    validos = _slots_validos_para_aula(aula, horario, ctx, slots)
+    if not validos:
+        return False
+    slot = rng.choice(validos)
+    nova_aula = Aula(
+        turma=aula.turma,
+        disciplina=aula.disciplina,
+        professor=aula.professor,
+        sala=aula.sala,
+        slot=slot,
+        subgrupo_id=aula.subgrupo_id,
+    )
+    horario.adicionar(nova_aula)
+    return True
+
+
+def construir_solucao_inicial(
+    problema: ProblemInstance,
+    slots: list[Slot],
+    rng: random.Random | None = None,
+) -> Horario:
+    """Constrói uma solução inicial viável a partir do ``ProblemInstance``.
+
+    Estratégia gulosa:
+    1. Para cada sessão requerida, escolhe o primeiro (professor, sala, slot)
+       que satisfaça as restrições duras.
+    2. As sessões são processadas por ordem de `lesson_id` (estável).
+    3. Se não for possível colocar uma sessão, registra diagnóstico e continua.
+    4. Retorna o horário parcialmente preenchido + diagnósticos adicionados.
+
+    Args:
+        problema: ``ProblemInstance`` já validado (sem erros).
+        slots: Lista de slots disponíveis (ordem não importa, usa ``rng``).
+        rng: Gerador de aleatórios opcional; usa ``random.Random()`` se omitido.
+
+    Returns:
+        ``Horario`` com as aulas colocadas; ``problema.diagnosticos`` pode ser
+        estendido com sessões não colocadas.
+    """
+
+    if rng is None:
+        rng = random.Random()
+
+    # Copia diagnósticos para não mutar o original em chamadas subsequentes
+    diagnosticos = list(problema.diagnosticos)
+
+    # Agrupa sessões por (turma, disciplina) para tentar colocar consecutivas
+    sessoes_por_turma_disc: dict[tuple[str, str], list[SessaoRequerida]] = {}
+    for sessao in problema.sessoes:
+        sessoes_por_turma_disc.setdefault((sessao.turma, sessao.disciplina), []).append(sessao)
+
+    horario = Horario()
+
+    for (turma_id, disc_id), sessoes in sessoes_por_turma_disc.items():
+        turma = problema.turmas[turma_id]
+        disciplina = problema.disciplinas[disc_id]
+
+        # Candidatos: (professor, sala) válidos
+        pares_validos: list[tuple[str, str]] = []
+        for prof_id in problema.professores:
+            prof = problema.professores[prof_id]
+            if not prof.pode_lecionar(disc_id):
+                continue
+            for sala_id, sala in problema.salas.items():
+                if sala.tipo != disciplina.tipo_sala_requerida:
+                    continue
+                if sala.capacidade < (
+                    problema.subgrupos[sessoes[0].subgrupo_id].numero_alunos
+                    if sessoes[0].subgrupo_id
+                    else turma.numero_alunos
+                ):
+                    continue
+                pares_validos.append((prof_id, sala_id))
+
+        if not pares_validos:
+            diagnosticos.append(
+                Diagnostico(
+                    codigo="SEM_ATRIBUICAO_VIAVEL",
+                    severidade="ERROR",
+                    mensagem=(
+                        f"Turma {turma_id}, disciplina {disc_id}: "
+                        "nenhum par (professor, sala) viável."
+                    ),
+                    entidades=(turma_id, disc_id),
+                )
+            )
+            continue
+
+        # Embaralha slots uma vez por grupo para diversidade
+        slots_embaralhados = list(slots)
+        rng.shuffle(slots_embaralhados)
+
+        for sessao in sessoes:
+            colocada = False
+            for prof_id, sala_id in pares_validos:
+                aula_base = Aula(
+                    turma=turma_id,
+                    disciplina=disc_id,
+                    professor=prof_id,
+                    sala=sala_id,
+                    slot=slots_embaralhados[0],  # placeholder
+                    subgrupo_id=sessao.subgrupo_id,
+                )
+                if _tentar_colocar_aula(aula_base, horario, problema.para_contexto(), slots_embaralhados, rng):
+                    colocada = True
+                    break
+            if not colocada:
+                diagnosticos.append(
+                    Diagnostico(
+                        codigo="SESSAO_NAO_COLOCADA",
+                        severidade="WARNING",
+                        mensagem=(
+                            f"Sessão {sessao.lesson_id}: não foi possível encontrar "
+                            "slot válido com os pares (professor, sala) disponíveis."
+                        ),
+                        entidades=(sessao.lesson_id,),
+                    )
+                )
+
+    # Atualiza diagnósticos do problema (referência externa vê as adições)
+    problema.diagnosticos[:] = diagnosticos
+    return horario
