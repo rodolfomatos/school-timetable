@@ -34,9 +34,13 @@ REFRESH_TOKEN_COOKIE = "refresh_token"
 
 
 def _cookie_secure() -> bool:
-    """Cookies só exigem HTTPS em produção; em local/teste continuam testáveis."""
+    """Cookies só exigem HTTPS quando o frontend é servido por HTTPS.
 
-    return settings.ENVIRONMENT == "production"
+    Servir a app em HTTP simples com ``Secure`` faria o browser descartar os
+    cookies de sessão (login "passava" mas a sessão não persistia).
+    """
+
+    return settings.FRONTEND_URL.startswith("https://")
 
 
 def _set_access_token_cookie(response: Response, token: str) -> None:

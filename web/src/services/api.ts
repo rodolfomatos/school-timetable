@@ -1,8 +1,7 @@
 import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/stores/authStore";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -16,9 +15,14 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    // /users/me é a sonda de rehidratação da sessão: um 401 aqui é esperado
+    // quando não há cookie e não deve forçar navegação.
+    const isSessionProbe = error.config?.url?.includes("/users/me");
+    if (error.response?.status === 401 && !isSessionProbe) {
       useAuthStore.getState().logout();
-      window.location.href = "/login";
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }

@@ -64,6 +64,10 @@
 | T058 | Concluído | Build | Build | P1 | VERIFIED |
 | T059 | Concluído | Learn | Learn | P1 | INDEPENDENTLY_VERIFIED |
 | T060 | Fase 9: CI/CD Pipeline com E2E Real | Concluído | Build | P0 | VERIFIED |
+| T061 | Fix `make start` (Postgres, backend, healthchecks) | Concluído | Build | Alta | VERIFIED |
+| T062 | Fix design system em /login (Tailwind/PostCSS) | Concluído | Build | Alta | VERIFIED |
+| T063 | Criar contas / seed + make targets | Concluído | Build | Alta | VERIFIED |
+| T064 | Fix login via IP externo (API /api, cookies, reload) | Concluído | Build | Alta | VERIFIED |
 
 ## Regras
 - Um ticket só entra em "Build" com spec aprovada em "Plan".

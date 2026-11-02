@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
+import { authService } from "@/services/api";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import Login from "@/pages/Login";
@@ -26,6 +28,29 @@ function RequireRole({ roles, children }: { roles: string[]; children: React.Rea
 }
 
 export default function App() {
+  // Rehidrata a sessão a partir do cookie httpOnly (/users/me) após um reload.
+  const [booting, setBooting] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    authService
+      .getMe()
+      .then(({ data }) => {
+        if (!cancelled) useAuthStore.getState().login(data);
+      })
+      .catch(() => {
+        // Sem sessão válida: continua como anónimo (rota protegida redireciona).
+      })
+      .finally(() => {
+        if (!cancelled) setBooting(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (booting) return null;
+
   return (
     <BrowserRouter>
       <Navbar />

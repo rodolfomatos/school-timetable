@@ -51,6 +51,10 @@ setup-frontend: ## Install frontend dependencies
 .PHONY: start stop restart status logs
 start: ## Start all services (postgres, backend, frontend)
 	@echo "$(BLUE)Starting all services...$(NC)"
+	@if [ ! -f .env ] || ! grep -q '^SECRET_KEY=' .env; then \
+		printf 'SECRET_KEY=%s\n' "$$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env; \
+		echo "$(YELLOW)Generated .env with a random SECRET_KEY$(NC)"; \
+	fi
 	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) up -d --build
 	@echo "$(GREEN)Services started!$(NC)"
 	@echo "  Backend:  http://localhost:8000"
@@ -99,6 +103,7 @@ dev: ## Start both backend and frontend locally (requires tmux)
 # DATABASE OPERATIONS
 # =============================================================================
 .PHONY: db-migrate db-migrate-create db-reset db-seed db-shell db-backup db-restore
+.PHONY: create-user create-admin
 db-migrate: ## Run database migrations (Alembic)
 	. $(VENV) && cd $(BACKEND_DIR) && alembic upgrade head
 
@@ -126,8 +131,28 @@ db-reset: ## Reset database (drop all tables and re-run migrations)
 		echo "$(YELLOW)Cancelled$(NC)"; \
 	fi
 
-db-seed: ## Seed database with test data
-	. $(VENV) && cd $(BACKEND_DIR) && python -m scripts.seed
+db-seed: ## Seed database with demo accounts (admin/professor/aluno)
+	@if $(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) ps --status running -q backend 2>/dev/null | grep -q .; then \
+		$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) exec -T backend python -m scripts.seed; \
+	else \
+		. $(VENV) && cd $(BACKEND_DIR) && python -m scripts.seed; \
+	fi
+
+create-user: ## Create a user (usage: make create-user email=x role=admin [password=...])
+	@if [ -z "$(email)" ]; then echo "usage: make create-user email=user@escola.pt role=admin [password=...] [name=...]"; exit 1; fi
+	@if $(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) ps --status running -q backend 2>/dev/null | grep -q .; then \
+		$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) exec -T backend python -m scripts.create_user --email "$(email)" --role "$(or $(role),student)" $(if $(password),--password "$(password)",) $(if $(name),--name "$(name)",); \
+	else \
+		. $(VENV) && cd $(BACKEND_DIR) && python -m scripts.create_user --email "$(email)" --role "$(or $(role),student)" $(if $(password),--password "$(password)",) $(if $(name),--name "$(name)",); \
+	fi
+
+create-admin: ## Create admin user quickly
+	@if [ -z "$(email)" ]; then echo "usage: make create-admin email=admin@escola.pt [password=...]"; exit 1; fi
+	@if $(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) ps --status running -q backend 2>/dev/null | grep -q .; then \
+		$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) exec -T backend python -m scripts.create_user --email "$(email)" --role admin $(if $(password),--password "$(password)",) $(if $(name),--name "$(name)",); \
+	else \
+		. $(VENV) && cd $(BACKEND_DIR) && python -m scripts.create_user --email "$(email)" --role admin $(if $(password),--password "$(password)",) $(if $(name),--name "$(name)",); \
+	fi
 
 db-shell: ## Open PostgreSQL shell
 	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) exec postgres psql -U school -d school_timetable

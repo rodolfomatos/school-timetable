@@ -1,9 +1,9 @@
+/* Import styles do design system local (must precede all other rules) */
+@import "./design-system/styles.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import styles do design system local */
-@import "@/design-system/styles.css";
 
 @layer base {
   :root {

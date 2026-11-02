@@ -53,6 +53,26 @@ docker compose up --build
 - API: `http://localhost:8000`
 - PostgreSQL: `localhost:5432`
 
+### Criar contas
+
+```bash
+make db-seed                 # contas demo (admin/professor/aluno, password senha123)
+make create-admin email=admin@escola.pt            # gera password aleatória
+make create-admin email=admin@escola.pt password=... name="Admin"
+make create-user email=prof@escola.pt role=teacher  # role: admin|teacher|coordinator|student
+```
+
+`make db-seed` cria:
+
+| Email | Role | Password |
+|-------|------|----------|
+| admin@escola.pt | admin | senha123 |
+| professor@escola.pt | teacher | senha123 |
+| aluno@escola.pt | student | senha123 |
+
+Em produção, usa `make create-admin` com password explícita e não corras o
+`db-seed`.
+
 ## Personas e Fluxos
 
 | Persona | O que pode fazer |
