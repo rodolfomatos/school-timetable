@@ -45,7 +45,6 @@ export default function TeacherCalendar() {
     setLoading(true);
     try {
       await unavailabilityService.createUnavailability({
-        teacher_id: 1, // Em produção, viria do perfil do utilizador
         slot: selectedSlot,
         justification,
         reason: "",

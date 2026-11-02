@@ -235,8 +235,17 @@ def construir_solucao_inicial(
         disciplina = problema.disciplinas[disc_id]
 
         # Candidatos: (professor, sala) válidos
+        # Usa professores_elegiveis da sessão se disponível; caso contrário,
+        # considera todos os professores que podem lecionar a disciplina.
+        primeira_sessao = sessoes[0]
+        professores_candidatos = (
+            primeira_sessao.professores_elegiveis
+            if primeira_sessao.professores_elegiveis
+            else tuple(p for p in problema.professores if problema.professores[p].pode_lecionar(disc_id))
+        )
+
         pares_validos: list[tuple[str, str]] = []
-        for prof_id in problema.professores:
+        for prof_id in professores_candidatos:
             prof = problema.professores[prof_id]
             if not prof.pode_lecionar(disc_id):
                 continue
@@ -244,8 +253,8 @@ def construir_solucao_inicial(
                 if sala.tipo != disciplina.tipo_sala_requerida:
                     continue
                 if sala.capacidade < (
-                    problema.subgrupos[sessoes[0].subgrupo_id].numero_alunos
-                    if sessoes[0].subgrupo_id
+                    problema.subgrupos[primeira_sessao.subgrupo_id].numero_alunos
+                    if primeira_sessao.subgrupo_id
                     else turma.numero_alunos
                 ):
                     continue

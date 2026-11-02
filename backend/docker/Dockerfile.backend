@@ -18,6 +18,14 @@ COPY backend/app/ ./app/
 COPY backend/scripts/ ./scripts/
 COPY backend/alembic.ini .
 COPY backend/alembic/ ./alembic/
+COPY backend/tests/ ./tests/
+
+# Frontend source for contract tests
+COPY web/ ./web/
+
+# O solver vive em src/timetable e é importado pelo backend.
+COPY src/ ./src/
+ENV PYTHONPATH=/app:/app/src
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app

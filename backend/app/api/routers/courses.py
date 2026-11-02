@@ -84,6 +84,7 @@ async def get_course(
     return course
 
 
+@router.patch("/{course_id}", response_model=CourseRead)
 @router.put("/{course_id}", response_model=CourseRead)
 async def update_course(
     course_id: int,

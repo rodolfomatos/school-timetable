@@ -84,6 +84,7 @@ async def get_class(
     return class_obj
 
 
+@router.patch("/{class_id}", response_model=ClassRead)
 @router.put("/{class_id}", response_model=ClassRead)
 async def update_class(
     class_id: int,

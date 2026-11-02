@@ -9,6 +9,7 @@ from app.api.routers import (
     courses,
     schedules,
     disputes,
+    unavailability,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "courses",
     "schedules",
     "disputes",
+    "unavailability",
 ]

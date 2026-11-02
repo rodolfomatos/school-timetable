@@ -40,7 +40,7 @@ export default function Dashboard() {
       });
       const { data } = response;
       setSolverStatus({
-        taskId: data.task_id,
+        taskId: data.job_id,
         status: "running",
         score: null,
         error: null,
@@ -51,11 +51,11 @@ export default function Dashboard() {
         for (let i = 0; i < 12; i++) {
           await new Promise((r) => setTimeout(r, 2000));
           const statusResp = await scheduleService.getSolverStatus(
-            data.task_id
+            data.job_id
           );
           const statusData = statusResp.data;
           setSolverStatus({
-            taskId: data.task_id,
+            taskId: data.job_id,
             status: statusData.status,
             score: statusData.score,
             error: statusData.error,

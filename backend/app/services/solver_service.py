@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import random
 import time
@@ -30,6 +31,12 @@ from app.db.session import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
+# Um único pool por processo: mantém as threads vivas entre pedidos e evita
+# que o executor seja recolhido pelo GC a meio de um job.
+_SOLVER_EXECUTOR = ThreadPoolExecutor(
+    max_workers=settings.SOLVER_MAX_WORKERS, thread_name_prefix="solver"
+)
+
 
 def _run_solver_sync(
     job_id: str,
@@ -44,11 +51,20 @@ def _run_solver_sync(
 
     start_time = time.time()
 
+    # A thread do solver cria o seu próprio engine: as ligações do engine
+    # global pertencem ao event loop do uvicorn e não podem ser reutilizadas
+    # dentro de ``asyncio.run`` num thread diferente.
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+    from sqlalchemy.pool import NullPool
+
+    engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+    SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
     async def _update_job_status(
         status: str,
         **kwargs,
     ) -> None:
-        async with AsyncSessionLocal() as db:
+        async with SessionLocal() as db:
             from sqlalchemy import select
             job = (await db.execute(select(SolverJob).where(SolverJob.id == job_id))).scalar_one()
             job.status = status
@@ -57,8 +73,7 @@ def _run_solver_sync(
             await db.commit()
 
     # Atualizar status para RUNNING
-    import asyncio as _asyncio
-    _asyncio.run(_update_job_status(SolverJobStatus.RUNNING, started_at=datetime.now(timezone.utc)))
+    asyncio.run(_update_job_status(SolverJobStatus.RUNNING, started_at=datetime.now(timezone.utc)))
 
     try:
         # Importação tardia para evitar dependência pesada no módulo principal
@@ -70,21 +85,27 @@ def _run_solver_sync(
             Slot,
             Turma,
             construir_problema,
-            construir_solucao_inicial,
         )
+        from timetable.seed import construir_solucao_inicial
         from timetable.local_search import simulated_annealing, tabu_search
         from timetable.cp_sat_baseline import CPSATSolver
 
         # Buscar entidades da base de dados
         async def _fetch_entities():
-            async with AsyncSessionLocal() as db:
+            async with SessionLocal() as db:
                 from sqlalchemy import select
+
+                from sqlalchemy.orm import selectinload
 
                 courses = (await db.execute(select(Course))).scalars().all()
                 rooms = (await db.execute(select(Room))).scalars().all()
                 subjects = (await db.execute(select(Subject))).scalars().all()
                 classes = (await db.execute(select(SchoolClass))).scalars().all()
-                teachers = (await db.execute(select(Teacher))).scalars().all()
+                teachers = (
+                    await db.execute(
+                        select(Teacher).options(selectinload(Teacher.user))
+                    )
+                ).scalars().all()
                 users = (await db.execute(select(User))).scalars().all()
 
                 # Currículo e qualificações
@@ -115,7 +136,7 @@ def _run_solver_sync(
             users,
             class_subjects,
             teacher_subjects,
-        ) = _asyncio.run(_fetch_entities())
+        ) = asyncio.run(_fetch_entities())
 
         # Construir ProblemInstance a partir dos dados do ORM
         professores_domain: dict[str, Professor] = {}
@@ -199,6 +220,12 @@ def _run_solver_sync(
                     }
                 )
 
+        # Gerar slots
+        slots = []
+        for dia in ["segunda", "terca", "quarta", "quinta", "sexta"]:
+            for hora in range(1, 9):
+                slots.append(Slot(dia=dia, hora=hora))
+
         # Construir ProblemInstance com validação
         problema = construir_problema(
             professores=professores_domain,
@@ -207,6 +234,7 @@ def _run_solver_sync(
             disciplinas=disciplinas_domain,
             curriculo=curriculo,
             indisponibilidades_adicionais=unavailabilities_adicionais,
+            slots_possiveis=slots,
         )
 
         if problema.tem_erros:
@@ -216,12 +244,6 @@ def _run_solver_sync(
 
         # Contexto para o solver
         ctx = problema.para_contexto()
-
-        # Gerar slots
-        slots = []
-        for dia in ["segunda", "terca", "quarta", "quinta", "sexta"]:
-            for hora in range(1, 9):
-                slots.append(Slot(dia=dia, hora=hora))
 
         # Construir solução inicial viável a partir do domínio
         rng = random.Random(seed if seed is not None else 42)
@@ -308,7 +330,7 @@ def _run_solver_sync(
         schedule_version_id = None
         if final_status in (SolverJobStatus.COMPLETED, SolverJobStatus.TIMEOUT_WITH_INCUMBENT) and avaliacao.viavel:
             async def _persist_schedule():
-                async with AsyncSessionLocal() as db:
+                async with SessionLocal() as db:
                     version = ScheduleVersion(
                         institution_id=institution_id,
                         status="draft",
@@ -334,10 +356,10 @@ def _run_solver_sync(
                     await db.commit()
                     return version.id
 
-            schedule_version_id = _asyncio.run(_persist_schedule())
+            schedule_version_id = asyncio.run(_persist_schedule())
 
         # Atualizar job com resultado final
-        _asyncio.run(_update_job_status(
+        asyncio.run(_update_job_status(
             final_status,
             schedule_version_id=schedule_version_id,
             score=avaliacao.score if avaliacao.viavel else None,
@@ -353,15 +375,17 @@ def _run_solver_sync(
     except Exception as e:
         elapsed = time.time() - start_time
         logger.exception("Erro no solver job %s", job_id)
-        _asyncio.run(_update_job_status(
+        asyncio.run(_update_job_status(
             SolverJobStatus.FAILED,
             error=str(e),
             elapsed_seconds=elapsed,
             completed_at=datetime.now(timezone.utc),
         ))
+    finally:
+        asyncio.run(engine.dispose())
 
 
-def create_solver_job(
+async def create_solver_job(
     institution_id: str | None,
     solver: str,
     time_limit_seconds: int,
@@ -373,27 +397,22 @@ def create_solver_job(
 
     job_id = str(uuid.uuid4())
 
-    async def _create_job():
-        async with AsyncSessionLocal() as db:
-            job = SolverJob(
-                id=job_id,
-                institution_id=institution_id,
-                status=SolverJobStatus.PENDING,
-                solver=solver,
-                time_limit_seconds=time_limit_seconds,
-                additional_unavailabilities=additional_unavailabilities,
-                created_by=created_by,
-                seed=seed if seed is not None else 42,
-            )
-            db.add(job)
-            await db.commit()
-
-    import asyncio as _asyncio
-    _asyncio.run(_create_job())
+    async with AsyncSessionLocal() as db:
+        job = SolverJob(
+            id=job_id,
+            institution_id=institution_id,
+            status=SolverJobStatus.PENDING,
+            solver=solver,
+            time_limit_seconds=time_limit_seconds,
+            additional_unavailabilities=additional_unavailabilities,
+            created_by=created_by,
+            seed=seed if seed is not None else 42,
+        )
+        db.add(job)
+        await db.commit()
 
     # Executar em thread separada para não bloquear a API
-    executor = ThreadPoolExecutor(max_workers=settings.SOLVER_MAX_WORKERS)
-    executor.submit(
+    _SOLVER_EXECUTOR.submit(
         _run_solver_sync,
         job_id,
         institution_id,

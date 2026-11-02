@@ -58,9 +58,9 @@ async def run_solver(
     )
 
     return SolverRunResponse(
-        task_id=job_id,
+        job_id=job_id,
         status="pending",
-        message="Solver iniciado. Consulte /scheduler/status/{task_id} para o resultado.",
+        message="Solver iniciado. Consulte /scheduler/status/{job_id} para o resultado.",
     )
 
 
@@ -87,7 +87,7 @@ async def solver_status(
         )
 
     return SolverStatusResponse(
-        task_id=job.id,
+        job_id=job.id,
         status=job.status,
         schedule_version_id=job.schedule_version_id,
         score=job.score,
@@ -122,7 +122,7 @@ async def list_jobs(
 
     return [
         SolverStatusResponse(
-            task_id=job.id,
+            job_id=job.id,
             status=job.status,
             schedule_version_id=job.schedule_version_id,
             score=job.score,

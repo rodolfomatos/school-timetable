@@ -84,6 +84,7 @@ async def get_subject(
     return subject
 
 
+@router.patch("/{subject_id}", response_model=SubjectRead)
 @router.put("/{subject_id}", response_model=SubjectRead)
 async def update_subject(
     subject_id: int,

@@ -84,6 +84,7 @@ async def get_room(
     return room
 
 
+@router.patch("/{room_id}", response_model=RoomRead)
 @router.put("/{room_id}", response_model=RoomRead)
 async def update_room(
     room_id: int,

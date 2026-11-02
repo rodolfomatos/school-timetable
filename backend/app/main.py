@@ -22,6 +22,7 @@ from app.api.routers import (
     courses,
     schedules,
     disputes,
+    unavailability,
 )
 
 
@@ -109,6 +110,7 @@ app.include_router(classes.router)
 app.include_router(courses.router)
 app.include_router(schedules.router)
 app.include_router(disputes.router)
+app.include_router(unavailability.router)
 
 
 @app.get("/health")

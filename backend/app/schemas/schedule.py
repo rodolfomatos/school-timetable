@@ -116,7 +116,8 @@ class UnavailabilityBase(BaseModel):
 
 
 class UnavailabilityCreate(UnavailabilityBase):
-    teacher_id: int
+    # Obrigatório apenas para admin/coordenação; docentes usam o próprio perfil.
+    teacher_id: int | None = None
 
 
 class UnavailabilityRead(UnavailabilityBase):

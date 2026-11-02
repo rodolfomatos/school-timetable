@@ -148,8 +148,8 @@ export interface SolverRunRequest {
 }
 
 export interface SolverStatus {
-  task_id: string;
-  status: "pending" | "running" | "completed" | "failed";
+  job_id: string;
+  status: "pending" | "running" | "completed" | "failed" | "cancelled" | "timeout_with_incumbent" | "timeout_no_solution";
   schedule_version_id?: number;
   score?: number;
   hard_violations?: number;

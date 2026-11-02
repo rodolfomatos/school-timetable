@@ -91,9 +91,9 @@ export const scheduleService = {
   }) => api.post("/scheduler/run", data),
   getSolverStatus: (taskId: string) =>
     api.get(`/scheduler/status/${taskId}`),
-  getVersions: () => api.get("/schedule/versions"),
+  getVersions: () => api.get("/scheduler/versions"),
   getAssignments: (versionId: number) =>
-    api.get(`/schedule/versions/${version_id}/assignments`.replace("{version_id}", String(versionId))),
+    api.get(`/scheduler/versions/${versionId}/assignments`),
 };
 
 export const disputeService = {
@@ -110,7 +110,7 @@ export const disputeService = {
 export const unavailabilityService = {
   getUnavailabilities: () => api.get("/unavailability"),
   createUnavailability: (data: {
-    teacher_id: number;
+    teacher_id?: number;
     slot: { dia: string; hora: number };
     justification: string;
     reason?: string;
