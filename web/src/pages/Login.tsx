@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Button, Input } from "@ilabuporto/design-system";
+import { Card, Button, Input } from "@/design-system";
 import { authService } from "@/services/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";

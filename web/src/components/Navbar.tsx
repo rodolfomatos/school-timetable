@@ -1,5 +1,5 @@
 import { useAuthStore } from "@/stores/authStore";
-import { Button, Brand, Navbar as DSNavbar } from "@ilabuporto/design-system";
+import { Button, Brand, Navbar as DSNavbar } from "@/design-system";
 import { Link, useNavigate } from "react-router-dom";
 
 export function Navbar() {

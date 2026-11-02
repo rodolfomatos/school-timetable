@@ -7,10 +7,7 @@ import Dashboard from "@/pages/Dashboard";
 import TeacherCalendar from "@/pages/TeacherCalendar";
 import ScheduleTable from "@/pages/ScheduleTable";
 import Disputes from "@/pages/Disputes";
-import ManageUsers from "@/pages/ManageUsers";
-import ManageRooms from "@/pages/ManageRooms";
-import ManageSubjects from "@/pages/ManageSubjects";
-import ManageClasses from "@/pages/ManageClasses";
+import ManageEntities from "@/pages/ManageEntities";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -67,41 +64,11 @@ export default function App() {
           }
         />
         <Route
-          path="/admin/users"
+          path="/admin/entities"
           element={
             <RequireAuth>
               <RequireRole roles={["admin", "coordinator"]}>
-                <ManageUsers />
-              </RequireRole>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin/rooms"
-          element={
-            <RequireAuth>
-              <RequireRole roles={["admin", "coordinator"]}>
-                <ManageRooms />
-              </RequireRole>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin/subjects"
-          element={
-            <RequireAuth>
-              <RequireRole roles={["admin", "coordinator"]}>
-                <ManageSubjects />
-              </RequireRole>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin/classes"
-          element={
-            <RequireAuth>
-              <RequireRole roles={["admin", "coordinator"]}>
-                <ManageClasses />
+                <ManageEntities />
               </RequireRole>
             </RequireAuth>
           }

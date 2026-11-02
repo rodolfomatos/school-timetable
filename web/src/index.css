@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import styles do design system @ilabuporto/design-system */
-@import "@ilabuporto/design-system/styles.css";
+/* Import styles do design system local */
+@import "@/design-system/styles.css";
 
 @layer base {
   :root {

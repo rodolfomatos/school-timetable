@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, Button, Badge, Input, Select, Modal, ConfirmDialog } from "@ilabuporto/design-system";
+import { Card, Button, Badge, Input, Select, Modal, ConfirmDialog } from "@/design-system";
 import { useScheduleStore } from "@/stores/scheduleStore";
 import { useAuthStore } from "@/stores/authStore";
-import { JUSTIFICATION_OPTIONS } from "@/stores/scheduleStore";
+import { JUSTIFICATION_OPTIONS } from "@/types";
 import { unavailabilityService } from "@/services/api";
 
 const DAYS = ["segunda", "terca", "quarta", "quinta", "sexta"];

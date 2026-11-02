@@ -1,4 +1,4 @@
-import { Card, Button, Badge, Table, Tabs } from "@ilabuporto/design-system";
+import { Card, Button, Badge, Table, Tabs } from "@/design-system";
 import { useScheduleStore } from "@/stores/scheduleStore";
 import { useAuthStore } from "@/stores/authStore";
 import { scheduleService } from "@/services/api";

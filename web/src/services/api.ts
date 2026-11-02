@@ -43,6 +43,7 @@ export const authService = {
   listUsers: () => api.get("/users"),
   updateUser: (id: number, data: Record<string, unknown>) =>
     api.patch(`/users/${id}`, data),
+  deleteUser: (id: number) => api.delete(`/users/${id}`),
 };
 
 export const schoolService = {

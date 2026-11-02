@@ -1,4 +1,4 @@
-import { Sidebar as DSSidebar } from "@ilabuporto/design-system";
+import { Sidebar as DSSidebar } from "@/design-system";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 
