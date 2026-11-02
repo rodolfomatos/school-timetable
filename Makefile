@@ -206,10 +206,10 @@ security: ## Security audit
 build: build-backend build-frontend ## Build all Docker images
 
 build-backend: ## Build backend Docker image
-	docker build -t school-timetable-backend:latest -f $(BACKEND_DIR)/docker/Dockerfile.backend $(BACKEND_DIR)
+	docker build -t school-timetable-backend:latest -f $(BACKEND_DIR)/docker/Dockerfile.backend .
 
 build-frontend: ## Build frontend Docker image
-	docker build -t school-timetable-frontend:latest -f $(WEB_DIR)/docker/Dockerfile.frontend $(WEB_DIR)
+	docker build -t school-timetable-frontend:latest -f $(WEB_DIR)/docker/Dockerfile.frontend .
 
 build-docker: ## Build all Docker images
 	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) build --no-cache
