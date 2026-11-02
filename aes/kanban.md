@@ -63,7 +63,7 @@
 | T057 | Concluído | Build | Build | P1 | VERIFIED |
 | T058 | Concluído | Build | Build | P1 | VERIFIED |
 | T059 | Concluído | Learn | Learn | P1 | INDEPENDENTLY_VERIFIED |
-| T060 | Fase 9: CI/CD Pipeline com E2E Real | Em Progresso | Build | P0 | EM_PROGRESSO |
+| T060 | Fase 9: CI/CD Pipeline com E2E Real | Concluído | Build | P0 | VERIFIED |
 
 ## Regras
 - Um ticket só entra em "Build" com spec aprovada em "Plan".
