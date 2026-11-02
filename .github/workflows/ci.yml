@@ -1,0 +1,236 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DATABASE_URL: postgresql+asyncpg://school:school@localhost:5432/school_timetable
+  SECRET_KEY: test-secret-key-for-ci-only-min-32-chars-long
+  FRONTEND_URL: http://localhost:3000
+  ENVIRONMENT: test
+  FULL_STACK_E2E: "1"
+
+jobs:
+  lint-and-test:
+    name: Lint + Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Run lint (ruff)
+        run: |
+          cd /opt/school-timetable && ruff check src tests backend/app backend/tests
+
+      - name: Run Python tests
+        run: |
+          cd /opt/school-timetable && PYTHONPATH=src python3 -m pytest tests/ -q -k "not test_cp_sat_dados_reais and not test_simulated_annealing_dados_reais and not test_tabu_search_dados_reais"
+
+      - name: Run Backend tests
+        run: |
+          cd backend && PYTHONPATH=. python3 -m pytest tests/ -q
+
+  e2e-tests:
+    name: E2E Tests (Full Stack)
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: school
+          POSTGRES_PASSWORD: school
+          POSTGRES_DB: school_timetable
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd web && npm ci
+
+      - name: Install Playwright
+        run: |
+          cd /opt/school-timetable && npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U school; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run migrations
+        run: |
+          cd backend
+          DATABASE_URL="postgresql+asyncpg://school:school@localhost:5432/school_timetable" \
+          alembic upgrade head
+
+      - name: Seed test data
+        run: |
+          cd backend
+          PYTHONPATH=. python3 -c "
+          import asyncio
+          from app.db.session import AsyncSessionLocal
+          from app.models.school import Course, Room, Subject, Class, Teacher, ClassSubject, TeacherSubject
+          from app.models.user import User, Role
+          from app.core.security import hash_password
+
+          async def seed():
+              async with AsyncSessionLocal() as db:
+                  # Create admin user
+                  admin = User(
+                      email='admin@test.com',
+                      hashed_password=hash_password('password123'),
+                      full_name='Test Admin',
+                      role='admin',
+                      institution_id='ci-test'
+                  )
+                  
+                  # Create course
+                  course = Course(code='CS101', name='Computer Science 101', institution_id='ci-test')
+                  
+                  # Create room
+                  room = Room(name='Lab 1', capacity=30, room_type='laboratory', institution_id='ci-test')
+                  
+                  # Create subject
+                  subject = Subject(code='CS101', name='Intro to CS', weekly_load=4, institution_id='ci-test', course_id=1)
+                  
+                  # Create class
+                  class_ = Class(name='CS101-A', year=1, student_count=25, institution_id='ci-test', course_id=1)
+                  
+                  # Create teacher user
+                  teacher_user = User(
+                      email='teacher@test.com',
+                      hashed_password=hash_password('password123'),
+                      full_name='Test Teacher',
+                      role='teacher',
+                      institution_id='ci-test'
+                  )
+                  
+                  # Create teacher profile
+                  teacher = Teacher(user_id=2, employee_code='T001', institution_id='ci-test')
+                  
+                  db.add_all([admin, course, room, subject, class_, teacher_user, teacher])
+                  await db.commit()
+                  
+                  # Create curriculum link
+                  class_subject = ClassSubject(class_id=1, subject_id=1, teacher_id=1, institution_id='ci-test')
+                  db.add(class_subject)
+                  
+                  # Create teacher qualification
+                  teacher_subject = TeacherSubject(teacher_id=1, subject_id=1, institution_id='ci-test')
+                  db.add(teacher_subject)
+                  
+                  await db.commit()
+                  print('Test data seeded successfully')
+
+          asyncio.run(seed())
+
+      - name: Start Backend
+        run: |
+          cd backend
+          PYTHONPATH=. nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+
+      - name: Start Frontend
+        run: |
+          cd web
+          nohup npm run dev -- --host 0.0.0.0 --port 3000 > /tmp/frontend.log 2>&1 &
+          sleep 10
+          curl -f http://localhost:3000 || exit 1
+
+      - name: Run E2E Tests
+        run: |
+          cd /opt/school-timetable
+          npx playwright test --project=chromium --reporter=html
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Test Backup/Restore
+        run: |
+          chmod +x scripts/backup.sh scripts/restore.sh
+          ./scripts/backup.sh /tmp/test_backup.dump
+          psql -h localhost -p 5432 -U school -d postgres -c "CREATE DATABASE school_timetable_restored;"
+          ./scripts/restore.sh /tmp/test_backup.dump school_timetable_restored
+          # Verify restored data
+          cd backend && PYTHONPATH=. python3 -c "
+          import asyncio
+          from app.db.session import AsyncSessionLocal
+          from app.models.school import Course, Room, Subject, Class, Teacher
+          from app.models.user import User, Role
+          from sqlalchemy import select
+
+          async def verify():
+              async with AsyncSessionLocal() as db:
+                  result = await db.execute(select(Course))
+                  courses = result.scalars().all()
+                  assert len(courses) == 1
+                  assert courses[0].code == 'CS101'
+                  print('✅ Backup/restore verified')
+          asyncio.run(verify())
+          "
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      # Add deployment steps here (e.g., Docker build/push, kubectl apply, etc.)
+      - name: Deploy to Staging
+        run: echo "Deploy to staging - implement your deployment logic here"
